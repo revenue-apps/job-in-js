@@ -1,0 +1,28 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+// LangGraph JS Coding Rules
+
+// 🚫 Do not use TypeScript
+- All code must be in plain JavaScript (.js), no TypeScript (.ts, .tsx).
+
+// 📦 Code Style
+- Use ES6+ syntax: arrow functions, async/await, destructuring.
+- Use named exports and imports for all functions/modules.
+- Keep functions short and modular, each with a single responsibility.
+
+// ⚙️ LangGraph Structure
+- Define all LangGraph nodes clearly with a comment on their purpose.
+- Input/output data must be explicitly described in JSON-like comments.
+- Do not mutate the shared state object — always return a new object.
+
+// 🔧 Agents and Tools
+- Agent functions should be isolated and easily testable.
+- Tools must include logging for both inputs and results.
+- Use `zod` or similar only if lightweight validation is absolutely required — avoid overengineering.
+
+// 🧪 Debugging & Logs
+- Every graph node must log when it starts and ends execution.
+- Include enough context in logs to trace failures easily (e.g., job title, url).

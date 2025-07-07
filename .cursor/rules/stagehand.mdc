@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+// Stagehand Integration Rules (JS Only)
+
+// 🚫 Do not use TypeScript
+- All API integration code must be written in plain JavaScript.
+
+// 🌐 API Usage
+- Stagehand endpoint must be set via environment variable (`STAGEHAND_API_URL`).
+- API calls must use `fetch` with a timeout of 10 seconds.
+- Wrap all fetch calls in try/catch with detailed error messages.
+
+// 📋 Job Scraping
+- Always send clean and minimal job URLs to Stagehand.
+- Expect and handle JSON response: must contain `title`, `company`, `location`, `description`, `url`.
+
+// ⚠️ Error Handling
+- Log errors as `[Stagehand Error] <job_url> — <error_message>`.
+- If DNS/timeout error, retry once with exponential backoff.
+- Do not allow Stagehand failures to block the overall scraping pipeline.
+
+// 🧪 Dev & Test
+- Never call Stagehand in dev/test without an explicit mock.
+- Provide at least 2 mock job HTML files to simulate Stagehand input.

@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+// ✅ TASK EXECUTION — DOs
+
+- Always read the full task description twice before starting.
+- Ask clarifying questions if anything is vague or open-ended.
+- Break the task into smaller subtasks or checkpoints before implementation.
+- Create a quick plan or list of intended changes if it's non-trivial.
+- Commit early with meaningful messages once a section is complete.
+- Communicate delays or blockers early to teammates.
+- Test your changes manually and/or write minimal test code where needed.
+- Clean up unused code or temporary logs before submitting.
+- Leave TODO comments only if absolutely required, and explain why.
+
+// ❌ TASK EXECUTION — DON'Ts
+
+- Don't assume missing details — clarify before implementing.
+- Don’t edit unrelated parts of the code unless explicitly required.
+- Don’t leave console.log or debug prints in committed code.
+- Don’t push directly to main branches without review (unless hotfix).
+- Don’t submit work without testing or checking for regressions.
+- Don’t ignore lint or formatting issues — run the formatter before commit.
+- Don’t rewrite large sections without clear reason or discussion.

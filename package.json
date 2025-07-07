@@ -1,0 +1,57 @@
+{
+  "name": "job-in-js",
+  "version": "1.0.0",
+  "description": "LangGraph JS project for automated job applications using Stagehand",
+  "main": "src/entry-points/jobScraper.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/entry-points/jobScraper.js",
+    "scrape": "node src/entry-points/jobScraper.js",
+    "scrape:mock": "node src/entry-points/jobScraper.js --mock",
+    "apply": "node src/entry-points/jobApplicator.js",
+    "apply:mock": "node src/entry-points/jobApplicator.js --mock",
+    "apply:batch": "node src/entry-points/jobApplicator.js --batch",
+    "apply:batch:mock": "node src/entry-points/jobApplicator.js --batch --mock",
+    "api": "node src/api/server.js",
+    "api:dev": "node --watch src/api/server.js",
+    "api:debug": "node --inspect src/api/server.js",
+    "api:start": "node src/api/server.js",
+    "api:run": "node start-api.js",
+    "test:api": "node test-api.js",
+    "test": "node src/tests/workflows/job-scraping.test.js",
+    "test:scraping": "node src/tests/workflows/job-scraping.test.js",
+    "test:application": "node src/tests/workflows/job-application.test.js",
+    "test:all": "npm run test:scraping && npm run test:application",
+    "dev": "node --watch src/entry-points/jobScraper.js",
+    "lint": "eslint src/",
+    "format": "prettier --write src/"
+  },
+  "keywords": [
+    "langgraph",
+    "job-scraping",
+    "stagehand",
+    "automation",
+    "job-applications"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@browserbasehq/stagehand": "^2.4.0",
+    "@langchain/langgraph": "^0.0.20",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
