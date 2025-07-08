@@ -38,16 +38,17 @@ const validateRequest = (schema) => {
 // Single job application
 router.post('/single', validateRequest(jobApplicationInputSchema), async (req, res) => {
   try {
-    const { jobUrl, candidateData, jobDescription, applicationSettings } = req.validatedData;
+    const { jobUrl, candidateData, resumeId, jobDescription, applicationSettings } = req.validatedData;
     
     logger.info('API: Single job application request', {
       jobUrl,
       candidateEmail: candidateData.personal.email,
+      hasResumeId: !!resumeId,
       hasJobDescription: !!jobDescription,
       apiKey: req.apiKey
     });
 
-    const result = await runEasyApplyWorkflow(jobUrl, candidateData, enhancedStagehandClient);
+    const result = await runEasyApplyWorkflow(jobUrl, candidateData, enhancedStagehandClient, resumeId);
     
     logger.info('API: Single job application completed', {
       jobUrl,
@@ -152,6 +153,7 @@ router.get('/docs', (req, res) => {
         body: {
           jobUrl: 'string (required)',
           candidateData: 'object (required)',
+          resumeId: 'string (optional) - S3 resume ID for resume upload',
           jobDescription: 'object (optional)',
           applicationSettings: 'object (optional)'
         },

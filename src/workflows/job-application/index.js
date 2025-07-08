@@ -100,8 +100,8 @@ export function createJobApplicationWorkflow() {
 }
 
 // Main application function
-export async function applyToJob(jobUrl, candidateData, jobDescription = null) {
-  logger.info('Starting job application process', { jobUrl });
+export async function applyToJob(jobUrl, candidateData, jobDescription = null, resumeId = null) {
+  logger.info('Starting job application process', { jobUrl, hasResumeId: !!resumeId });
   
   try {
     // Initialize Stagehand client
@@ -115,6 +115,7 @@ export async function applyToJob(jobUrl, candidateData, jobDescription = null) {
       jobUrl,
       candidateData,
       jobDescription,
+      resumeId,
       timestamp: new Date().toISOString(),
     };
     

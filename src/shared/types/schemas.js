@@ -81,6 +81,7 @@ export const candidateProfileSchema = z.object({
 export const jobApplicationInputSchema = z.object({
   jobUrl: z.string().url("Valid job URL is required"),
   candidateData: candidateProfileSchema,
+  resumeId: z.string().optional(), // S3 resume ID for resume upload
   jobDescription: z.object({
     title: z.string().optional(),
     company: z.string().optional(),
@@ -103,6 +104,7 @@ export const jobApplicationInputSchema = z.object({
 export const batchJobApplicationInputSchema = z.object({
   jobUrls: z.array(z.string().url("Valid job URLs are required")),
   candidateData: candidateProfileSchema,
+  resumeId: z.string().optional(), // S3 resume ID for resume upload
   jobDescriptions: z.array(z.object({
     title: z.string().optional(),
     company: z.string().optional(),
@@ -205,6 +207,7 @@ export const exampleCandidateData = {
 export const exampleJobApplicationInput = {
   jobUrl: "https://linkedin.com/jobs/view/123456789",
   candidateData: exampleCandidateData,
+  resumeId: "12345", // S3 resume ID for resume upload
   jobDescription: {
     title: "Senior Full Stack Engineer",
     company: "Tech Company",

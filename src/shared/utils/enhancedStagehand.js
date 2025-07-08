@@ -20,7 +20,7 @@ class EnhancedStagehandClient {
 
     try {
       this.stagehand = new Stagehand({
-        env: "BROWSERBASE", // Use cloud-based browser
+        env: "LOCAL", // Use cloud-based browser
         apiKey: config.stagehand.browserbaseApiKey,
         projectId: config.stagehand.projectId,
         modelName: "openai/gpt-4o-mini", // Use a fast model for extraction
@@ -234,6 +234,14 @@ class EnhancedStagehandClient {
       await this.initialize();
     }
     return this.stagehand.page;
+  }
+
+  async newAgent() {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    // Create agent using stagehand.agent()
+    return this.stagehand.agent();
   }
 
   // async checkHealth() {

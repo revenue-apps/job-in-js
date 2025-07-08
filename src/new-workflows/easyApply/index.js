@@ -3,6 +3,7 @@ import { detectPageLoadNode } from '../../new-nodes/detection/detectPageLoadNode
 import { analyzeFormNode } from '../../new-nodes/detection/analyzeFormNode.js';
 import { fieldMappingNode } from '../../new-nodes/mapping/fieldMappingNode.js';
 import { fillFormNode } from '../../new-nodes/actions/fillFormNode.js';
+import { submitResumeNode } from '../../new-nodes/actions/submitResumeNode.js';
 import { afterPageLoadDecision } from './decisionFunctions.js';
 import { easyApplyStateSchema } from '../../shared/utils/easyApplyState.js';
 
@@ -16,6 +17,7 @@ const createEasyApplyWorkflow = () => {
   workflow.addNode('analyze_form', analyzeFormNode);
   workflow.addNode('field_mapping', fieldMappingNode);
   workflow.addNode('fill_form', fillFormNode);
+  workflow.addNode('submit_resume', submitResumeNode);
   
   // Add edges
   workflow.addConditionalEdges(
@@ -38,8 +40,11 @@ const createEasyApplyWorkflow = () => {
   // Add edge from field_mapping to fill_form
   workflow.addEdge('field_mapping', 'fill_form');
   
-  // Add edge from fill_form to end
-  workflow.addEdge('fill_form', '__end__');
+  // Add edge from fill_form to submit_resume
+  workflow.addEdge('fill_form', 'submit_resume');
+  
+  // Add edge from submit_resume to end
+  workflow.addEdge('submit_resume', '__end__');
   
   // Set entry point
   workflow.setEntryPoint('detect_page_load');
@@ -47,19 +52,22 @@ const createEasyApplyWorkflow = () => {
   return workflow.compile();
 };
 
-export const runEasyApplyWorkflow = async (jobUrl, candidateData, stagehandClient) => {
+export const runEasyApplyWorkflow = async (jobUrl, candidateData, stagehandClient, resumeId = null) => {
   console.log('🚀 Starting Easy Apply Workflow');
   
   await stagehandClient.start();
   try {
-    // Initialize page
+    // Initialize page and agent
     const page = await stagehandClient.newPage();
+    const agent = await stagehandClient.newAgent();
     
     // Create initial state
     const initialState = {
       url: jobUrl,
       candidateData,
       page,
+      agent,
+      resumeId,
       currentStep: 'start'
     };
     
@@ -68,7 +76,7 @@ export const runEasyApplyWorkflow = async (jobUrl, candidateData, stagehandClien
     const result = await workflow.invoke(initialState);
     
     console.log('✅ Easy Apply Workflow completed');
-    console.log('Final state:', JSON.stringify(result, null, 2));
+    // console.log('Final state:', JSON.stringify(result, null, 2));
     
     return result;
     

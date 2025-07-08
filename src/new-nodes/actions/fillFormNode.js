@@ -43,7 +43,13 @@ export async function fillFormNode(state) {
     // Fill the form using the mapped fields
     const formFillResult = await fillFormWithMappedFields(page, fieldMapping.mappings);
     
-    console.log('Form fill result:', formFillResult);
+    console.log('📊 Form Fill State:', {
+      success: formFillResult.success,
+      fieldsFilled: formFillResult.fieldsFilled,
+      totalFields: formFillResult.fieldsMapped?.length || 0,
+      issues: formFillResult.issues || [],
+      reasoning: formFillResult.reasoning
+    });
     
     return {
       ...state,
@@ -126,12 +132,13 @@ IMPORTANT: Only fill the fields listed above. Do not fill any other fields on th
     // Process the AI response
     if (fillResult.fieldsFilled) {
       fieldsFilled = fillResult.fieldsFilled.filter(f => f.success).length;
-      filledFields = fillResult.fieldsFilled.map(f => ({
+      const processedFields = fillResult.fieldsFilled.map(f => ({
         field: f.fieldName,
         value: f.value,
         success: f.success,
         reason: f.reason
       }));
+      filledFields.push(...processedFields);
     }
     
     const success = fillResult.success || fieldsFilled > 0;

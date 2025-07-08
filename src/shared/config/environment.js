@@ -15,7 +15,7 @@ const config = {
 
   // Stagehand configuration
   stagehand: {
-    env: process.env.STAGEHAND_ENV || 'production',
+    env: process.env.STAGEHAND_ENV || 'LOCAL',
     modelName: process.env.STAGEHAND_MODEL_NAME || 'gpt-4o-mini',
     openaiApiKey: process.env.OPENAI_API_KEY,
     browserbaseApiKey: process.env.BROWSERBASE_API_KEY,
@@ -58,9 +58,12 @@ const config = {
 // Validate required environment variables
 const requiredEnvVars = [
   'OPENAI_API_KEY',
-  'BROWSERBASE_API_KEY',
-  'BROWSERBASE_PROJECT_ID',
 ];
+
+// Only require Browserbase credentials if not running locally
+if (process.env.STAGEHAND_ENV !== 'LOCAL') {
+  requiredEnvVars.push('BROWSERBASE_API_KEY', 'BROWSERBASE_PROJECT_ID');
+}
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 

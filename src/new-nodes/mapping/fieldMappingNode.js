@@ -54,6 +54,13 @@ export async function fieldMappingNode(state) {
     
     const mappedCount = mappings.filter(m => m.mapped).length;
     console.log(`✅ Field Mapping: ${mappedCount}/${mappableFields.length} fields mapped`);
+    console.log('📊 Field Mapping State:', {
+      success: true,
+      mappedFields: mappedCount,
+      unmappedFields: mappings.filter(m => !m.mapped).length,
+      totalFields: mappings.length,
+      mappedFieldsList: mappings.filter(m => m.mapped).map(m => ({ fieldName: m.fieldName, value: m.value, confidence: m.confidence }))
+    });
     
     return {
       ...state,
@@ -220,7 +227,7 @@ IMPORTANT:
     //   }
     // });
 
-    return mappings;
+    return mappings.filter(m => m.mapped);
     
   } catch (error) {
     console.error('Error in OpenAI field mapping:', error.message);

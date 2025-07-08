@@ -33,43 +33,84 @@ export async function analyzeFormNode(state) {
 
         console.log('Analyzing form fields with AI...');
 
-            // Use Stagehand's extract method with correct Zod schema
-    const formAnalysis = await page.extract({
-      instruction: `Look for form fields on this job application page. Common field names to look for: ${getAllFieldNames().slice(0, 20).join(', ')}. 
-      
+        try {
+            // Use Stagehand's extract method with simpler schema
+            const formAnalysis = await page.extract({
+              instruction: `Look for form fields on this job application page. Common field names to look for: ${getAllFieldNames().slice(0, 20).join(', ')}. 
+              
 For each field found, extract:
 - Field name
-- Field type (text, email, select, textarea, etc.)
-- For SELECT fields only: also extract the available options
+- Field type (text, email, select, textarea, file, etc.)
 
-Focus on text, email, textarea, and select fields.`,
-      schema: z.object({
-        fields: z.array(z.object({
-          name: z.string(),
-          type: z.string(),
-          options: z.array(z.string()).optional()
-        }))
-      })
-    });
+Focus on text, email, textarea, select, and file upload fields. Pay special attention to resume/CV upload fields.
 
-        //         // Parse the AI response to extract field information
-        const fields = parseFormFields(formAnalysis);
+Return a simple array of field objects with name and type.`,
+              schema: z.object({
+                fields: z.array(z.object({
+                  name: z.string(),
+                  type: z.string()
+                }))
+              })
+            });
 
-        console.log(`✅ Form Analysis: Found ${fields.length} fields`);
+            // Parse the AI response to extract field information
+            const fields = parseFormFields(formAnalysis);
 
-        return {
-            ...state,
-            formAnalysis: {
+            console.log(`✅ Form Analysis: Found ${fields.length} fields`);
+            console.log('📊 Form Analysis State:', {
                 success: true,
-                fields: fields,
                 fieldCount: fields.length,
                 requiredFields: fields.filter(f => f.required).length,
                 optionalFields: fields.filter(f => !f.required).length,
                 fieldTypes: getFieldTypeSummary(fields),
-                aiResponse: formAnalysis
-            },
-            currentStep: 'form_analyzed'
-        };
+                fields: fields.map(f => ({ name: f.name, type: f.type }))
+            });
+
+            return {
+                ...state,
+                formAnalysis: {
+                    success: true,
+                    fields: fields,
+                    fieldCount: fields.length,
+                    requiredFields: fields.filter(f => f.required).length,
+                    optionalFields: fields.filter(f => !f.required).length,
+                    fieldTypes: getFieldTypeSummary(fields),
+                    aiResponse: formAnalysis
+                },
+                currentStep: 'form_analyzed'
+            };
+
+        } catch (extractError) {
+            console.log('❌ AI extraction failed, using fallback parsing');
+            
+            // Fallback: use a simpler approach without structured extraction
+            const fallbackFields = getFallbackFields();
+            
+            console.log('📊 Form Analysis State (Fallback):', {
+                success: true,
+                fieldCount: fallbackFields.length,
+                requiredFields: fallbackFields.filter(f => f.required).length,
+                optionalFields: fallbackFields.filter(f => !f.required).length,
+                fieldTypes: getFieldTypeSummary(fallbackFields),
+                fallbackUsed: true,
+                fields: fallbackFields.map(f => ({ name: f.name, type: f.type }))
+            });
+
+            return {
+                ...state,
+                formAnalysis: {
+                    success: true,
+                    fields: fallbackFields,
+                    fieldCount: fallbackFields.length,
+                    requiredFields: fallbackFields.filter(f => f.required).length,
+                    optionalFields: fallbackFields.filter(f => !f.required).length,
+                    fieldTypes: getFieldTypeSummary(fallbackFields),
+                    aiResponse: null,
+                    fallbackUsed: true
+                },
+                currentStep: 'form_analyzed_fallback'
+            };
+        }
 
     } catch (error) {
         console.error('❌ AnalyzeFormNode error:', error.message);
@@ -101,7 +142,9 @@ function parseFormFields(aiResponse) {
                 validation: '',
                 value: '',
                 id: field.name,
-                options: field.options || [] // Include dropdown options for select fields
+                options: [], // Simplified - no options for now
+                fileTypes: [], // Simplified - no file types for now
+                maxSize: null // Simplified - no max size for now
             }));
         }
 
@@ -133,7 +176,9 @@ function parseFormFields(aiResponse) {
                             validation: '',
                             value: '',
                             id: field.name,
-                            options: field.options || []
+                            options: field.options || [],
+                            fileTypes: field.fileTypes || [],
+                            maxSize: field.maxSize || null
                         };
                     }
                 });
@@ -155,7 +200,9 @@ function parseFormFields(aiResponse) {
                 validation: '',
                 value: '',
                 id: fieldName,
-                options: []
+                options: [],
+                fileTypes: [],
+                maxSize: null
             });
         }
     }
@@ -200,4 +247,25 @@ export function findFieldByName(name) {
 // Helper function to check if field exists in the JSON file
 export function hasField(name) {
   return fieldList.includes(name);
+}
+
+// Fallback function to get common form fields when AI extraction fails
+function getFallbackFields() {
+  const commonFields = [
+    'firstname', 'lastname', 'email', 'phone', 'location', 'resume', 'coverletter'
+  ];
+  
+  return commonFields.map(fieldName => ({
+    name: fieldName,
+    type: getFieldType(fieldName),
+    label: fieldName,
+    placeholder: fieldName,
+    required: false,
+    validation: '',
+    value: '',
+    id: fieldName,
+    options: [],
+    fileTypes: [],
+    maxSize: null
+  }));
 } 
