@@ -10,6 +10,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { validateApiKey } from './middleware/validateApiKey.js';
 import jobApplicationRoutes from './routes/jobApplication.js';
 import healthRoutes from './routes/health.js';
+import jobDiscoveryRoutes from './routes/jobDiscovery.js';
 import { enhancedStagehandClient } from '../shared/utils/enhancedStagehand.js';
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/health', healthRoutes);
 
 // API routes
 app.use('/api/v1/job-application', jobApplicationRoutes);
+app.use('/api/v1/job-discovery', jobDiscoveryRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

@@ -5,7 +5,7 @@ import { config } from '../../shared/config/environment.js';
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
-  defaultModel: 'gpt-4o', // Set default model for all requests
+  defaultModel: 'gpt-4o-mini', // Set default model for all requests
 });
 
 export async function fieldMappingNode(state) {

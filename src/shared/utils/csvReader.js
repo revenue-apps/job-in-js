@@ -6,7 +6,7 @@ export async function readJobUrlsFromCSV(filePath) {
   logger.info('Reading job URLs from CSV', { filePath });
   
   return new Promise((resolve, reject) => {
-    const urls = [];
+    const jobData = [];
     
     if (!fs.existsSync(filePath)) {
       logger.error('CSV file not found', { filePath });
@@ -17,21 +17,25 @@ export async function readJobUrlsFromCSV(filePath) {
     fs.createReadStream(filePath)
       .pipe(csv())
       .on('data', (row) => {
-        // Assuming the CSV has a 'url' column
-        // You can modify this based on your CSV structure
+        // Read both URL and company columns
         const url = row.url || row.URL || row.link || row.Link;
+        const company = row.company || row.Company || row.COMPANY || '';
+        
         if (url && isValidUrl(url)) {
-          urls.push(url.trim());
+          jobData.push({
+            url: url.trim(),
+            company: company.trim()
+          });
         } else if (url) {
           logger.warn('Invalid URL found in CSV', { url, row });
         }
       })
       .on('end', () => {
         logger.info('CSV reading completed', { 
-          totalUrls: urls.length,
+          totalJobs: jobData.length,
           filePath 
         });
-        resolve(urls);
+        resolve(jobData);
       })
       .on('error', (error) => {
         logger.error('Error reading CSV file', { error: error.message, filePath });
