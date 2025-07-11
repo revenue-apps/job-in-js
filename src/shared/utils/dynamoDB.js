@@ -357,7 +357,7 @@ export const insertJobDescriptions = async (jobDescriptions) => {
     idPrefix: 'job',
     additionalFields: {},
     statusField: 'status',
-    statusValue: 'extracted',
+    statusValue: 'discovered',
     timestampField: 'scrapedAt',
     maxRetries: 3
   });

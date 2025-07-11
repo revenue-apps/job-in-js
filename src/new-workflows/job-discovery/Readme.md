@@ -102,7 +102,7 @@ POST /api/v1/job-discovery
 | `domain` | String | Search domain |
 | `filters` | Object | Original search filters |
 | `scrapedAt` | String | ISO timestamp |
-| `status` | String | "extracted" |
+| `status` | String | "discovered" |
 
 ### Example Record
 ```json
@@ -116,7 +116,7 @@ POST /api/v1/job-discovery
     "location": "San Francisco"
   },
   "scrapedAt": "2024-01-15T10:30:00.000Z",
-  "status": "extracted"
+  "status": "discovered"
 }
 ```
 
