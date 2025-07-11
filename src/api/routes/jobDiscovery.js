@@ -53,9 +53,13 @@ router.post('/', async (req, res) => {
         scrapedAt: job.scrapedAt
       })),
       jobDescriptions: result.jobDescriptions || [], // Add the complete job description format
+      storedJobs: result.storedJobs || [], // Add the stored jobs from DynamoDB
+      storageErrors: result.storageErrors || [], // Add storage errors
       count: {
         urls: processedUrls.length,
-        jobs: scrapedJobs.length
+        jobs: scrapedJobs.length,
+        stored: result.storedJobs?.length || 0,
+        storageErrors: result.storageErrors?.length || 0
       },
       timestamp: new Date().toISOString()
     });

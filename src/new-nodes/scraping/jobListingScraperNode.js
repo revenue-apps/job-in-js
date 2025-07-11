@@ -1,6 +1,7 @@
 import { logger } from '../../shared/utils/logger.js';
 import { z } from 'zod';
 import OpenAI from 'openai';
+import { insertJobDescriptions } from '../../shared/utils/dynamoDB.js';
 
 export const jobListingScraperNode = async (state) => {
   const { processedUrls, page, agent } = state;
@@ -94,7 +95,6 @@ ${allUrls.join('\n')}
           title: `Job ${index + 1}`,
           url: url,
           company: urlData.company || extractCompanyFromUrl(url),
-          source: extractSourceFromUrl(urlData.finalUrl),
           scrapedAt: new Date().toISOString()
         }));
         
@@ -118,14 +118,32 @@ ${allUrls.join('\n')}
       url: job.url,
       company: job.company,
       domain: urlData.domain,
-      filters: urlData.filters,
-      source: job.source
+      filters: urlData.filters
     }));
+    
+    // Store job descriptions in DynamoDB
+    let storedJobs = [];
+    let storageErrors = [];
+    
+    if (jobDescriptions.length > 0) {
+      try {
+        const storageResult = await insertJobDescriptions(jobDescriptions);
+        storedJobs = storageResult.results;
+        storageErrors = storageResult.errors;
+        
+        logger.info(`Stored ${storedJobs.length} jobs in DynamoDB, ${storageErrors.length} failed`);
+      } catch (error) {
+        logger.error('Failed to store jobs in DynamoDB:', error.message);
+        storageErrors.push({ error: error.message });
+      }
+    }
     
     return {
       ...state,
       scrapedJobs,
-      jobDescriptions, // Add the url, company format to state
+      jobDescriptions,
+      storedJobs,
+      storageErrors,
       currentStep: 'job_scraping_complete'
     };
     
@@ -146,19 +164,7 @@ ${allUrls.join('\n')}
 
 
 
-function extractSourceFromUrl(url) {
-  if (url.includes('linkedin.com')) return 'LinkedIn';
-  if (url.includes('indeed.com')) return 'Indeed';
-  if (url.includes('glassdoor.com')) return 'Glassdoor';
-  if (url.includes('monster.com')) return 'Monster';
-  if (url.includes('ziprecruiter.com')) return 'ZipRecruiter';
-  if (url.includes('careerbuilder.com')) return 'CareerBuilder';
-  if (url.includes('simplyhired.com')) return 'SimplyHired';
-  if (url.includes('dice.com')) return 'Dice';
-  if (url.includes('angel.co')) return 'AngelList';
-  if (url.includes('stackoverflow.com')) return 'Stack Overflow';
-  return 'Unknown';
-}
+
 
 function extractCompanyFromUrl(url) {
   try {

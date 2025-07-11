@@ -41,6 +41,9 @@ export const jobDiscoveryStateSchema = {
     source: z.string().optional()
   })).optional().describe('Job descriptions with company, domain, filters'),
   
+  storedJobs: z.array(z.record(z.any())).optional().describe('Jobs stored in DynamoDB'),
+  storageErrors: z.array(z.record(z.any())).optional().describe('Errors from DynamoDB storage'),
+  
   // Error handling
   errors: z.array(z.object({
     step: z.string(),
