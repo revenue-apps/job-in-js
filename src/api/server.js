@@ -11,6 +11,7 @@ import { validateApiKey } from './middleware/validateApiKey.js';
 import jobApplicationRoutes from './routes/jobApplication.js';
 import healthRoutes from './routes/health.js';
 import jobDiscoveryRoutes from './routes/jobDiscovery.js';
+import jobExtractionRoutes from './routes/jobExtraction.js';
 import { enhancedStagehandClient } from '../shared/utils/enhancedStagehand.js';
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/health', healthRoutes);
 // API routes
 app.use('/api/v1/job-application', jobApplicationRoutes);
 app.use('/api/v1/job-discovery', jobDiscoveryRoutes);
+app.use('/api/v1', jobExtractionRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

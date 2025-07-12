@@ -59,11 +59,10 @@ interface JobExtractionState {
 **Input**: Job URL from loaded job
 **Output**: Raw HTML/text content for the job
 **Key Features**:
-- Navigate to job URL
+- Navigate to job URL using page.goto()
 - Extract full page content (HTML + text)
-- Handle different job platforms (LinkedIn, Indeed, etc.)
-- Rate limiting and error handling
 - Store raw content for future re-analysis
+- Simple error handling and retry logic
 
 #### 3. Job Analyzer Node
 **Purpose**: Use AI to extract structured job information
@@ -78,15 +77,16 @@ interface JobExtractionState {
 
 #### 4. Domain Classifier Node
 **Purpose**: Identify job domain and sub-domain with multi-domain scoring
-**Input**: Job title and description
+**Input**: Job analysis results with raw text
 **Output**: Multiple domain classifications with confidence scores
 **Key Features**:
-- AI-based multi-domain classification
+- AI-based multi-domain classification using `page.extract()`
 - Confidence scoring for each domain classification
-- Primary domain selection based on confidence threshold
+- Primary domain selection based on highest confidence
 - Support for jobs that span multiple domains
-- Sub-domain identification (development, testing, architecture)
+- Sub-domain identification within primary domain
 - Support for multiple domains (software_engineering, data_science, etc.)
+- Pure function implementation for LangGraph compatibility
 
 #### 5. Experience Level Detector Node
 **Purpose**: Determine job seniority level
@@ -176,7 +176,7 @@ export const jobLoaderNode = async (state) => {
 ### Job Content Extractor Node
 ```javascript
 export const jobContentExtractorNode = async (state) => {
-  const { currentJob, page, agent } = state;
+  const { currentJob, page } = state;
   
   if (!currentJob) {
     return {
@@ -190,14 +190,18 @@ export const jobContentExtractorNode = async (state) => {
     // Navigate to job page
     await page.goto(currentJob.url, { waitUntil: 'networkidle' });
     
-    // Extract content based on platform
-    const content = await extractJobContent(page, currentJob.url);
+    // Extract raw content
+    const content = await page.evaluate(() => {
+      return {
+        html: document.documentElement.outerHTML,
+        text: document.body.textContent || document.body.innerText || ''
+      };
+    });
     
     const extractedContent = {
       url: currentJob.url,
       rawHtml: content.html,
-      fullText: content.text,
-      platform: detectPlatform(currentJob.url),
+      fullText: content.text.trim(),
       extractedAt: new Date().toISOString()
     };
     
@@ -492,18 +496,13 @@ export const loadDomainConfig = async (domain) => {
 ### Platform-Specific Extraction
 ```javascript
 export const extractJobContent = async (page, url) => {
-  const platform = detectPlatform(url);
-  
-  switch (platform) {
-    case 'linkedin':
-      return await extractLinkedInContent(page);
-    case 'indeed':
-      return await extractIndeedContent(page);
-    case 'glassdoor':
-      return await extractGlassdoorContent(page);
-    default:
-      return await extractGenericContent(page);
-  }
+  // Simple extraction - no platform-specific logic needed
+  return await page.evaluate(() => {
+    return {
+      html: document.documentElement.outerHTML,
+      text: document.body.textContent || document.body.innerText || ''
+    };
+  });
 };
 ```
 

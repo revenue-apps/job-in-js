@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, UpdateCommand, GetCommand, QueryCommand, DeleteCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { logger } from './logger.js';
+import crypto from 'crypto';
 
 // Initialize DynamoDB client
 const client = new DynamoDBClient({
@@ -17,7 +18,7 @@ const docClient = DynamoDBDocumentClient.from(client);
  * Generate a unique ID based on a value and prefix
  */
 function generateItemId(value, prefix) {
-  const hash = require('crypto').createHash('md5').update(value).digest('hex');
+  const hash = crypto.createHash('md5').update(value).digest('hex');
   return `${prefix}_${hash.substring(0, 8)}_${Date.now()}`;
 }
 
@@ -41,8 +42,11 @@ export const insertItem = async (tableName, item, options = {}) => {
       item[idField] = generateItemId(idValue, idPrefix);
     }
 
+    // Clean the item to remove non-serializable data
+    const cleanItem = JSON.parse(JSON.stringify(item));
+    
     const dbItem = {
-      ...item,
+      ...cleanItem,
       ...additionalFields,
       [timestampField]: new Date().toISOString(),
       [statusField]: statusValue
