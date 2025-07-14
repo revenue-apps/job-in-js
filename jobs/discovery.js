@@ -1,16 +1,18 @@
 import cron from 'node-cron';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { logger } from '../src/shared/utils/logger.js';
 import { runJobDiscoveryFromConfig } from '../src/new-workflows/job-discovery/index.js';
 
 /**
  * Discovery Job
  * Runs job discovery for multiple domains and filters
+ * Processes one domain at a time with rotation
  */
 export class DiscoveryJob {
   constructor() {
     this.isRunning = false;
     this.config = this.loadConfig();
+    this.stateFile = './config/discovery_state.json';
   }
 
   /**
@@ -25,6 +27,44 @@ export class DiscoveryJob {
       logger.error('Failed to load discovery config:', error.message);
       return { discovery_inputs: [], settings: {} };
     }
+  }
+
+  /**
+   * Load discovery state (current domain index)
+   */
+  loadState() {
+    try {
+      if (!existsSync(this.stateFile)) {
+        // Initialize state file if it doesn't exist
+        const initialState = { currentDomainIndex: 0, lastRun: null };
+        writeFileSync(this.stateFile, JSON.stringify(initialState, null, 2));
+        return initialState;
+      }
+      
+      const stateData = readFileSync(this.stateFile, 'utf-8');
+      return JSON.parse(stateData);
+    } catch (error) {
+      logger.error('Failed to load discovery state:', error.message);
+      return { currentDomainIndex: 0, lastRun: null };
+    }
+  }
+
+  /**
+   * Save discovery state
+   */
+  saveState(state) {
+    try {
+      writeFileSync(this.stateFile, JSON.stringify(state, null, 2));
+    } catch (error) {
+      logger.error('Failed to save discovery state:', error.message);
+    }
+  }
+
+  /**
+   * Get next domain index with rotation
+   */
+  getNextDomainIndex(currentIndex, totalDomains) {
+    return (currentIndex + 1) % totalDomains;
   }
 
   /**
@@ -86,7 +126,7 @@ export class DiscoveryJob {
   }
 
   /**
-   * Run discovery for all configured inputs
+   * Run discovery for one domain at a time with rotation
    */
   async runDiscovery() {
     if (this.isRunning) {
@@ -98,40 +138,56 @@ export class DiscoveryJob {
     const startTime = new Date();
     
     logger.info('🚀 Starting Discovery Job');
-    logger.info(`📊 Processing ${this.config.discovery_inputs.length} discovery inputs`);
-    
-    const results = [];
     
     try {
-      // Process each discovery input
+      // Load current state
+      const state = this.loadState();
       const enabledInputs = this.config.discovery_inputs.filter(input => input.enabled !== false);
-      logger.info(`📊 Processing ${enabledInputs.length} enabled discovery inputs`);
       
-      for (const input of enabledInputs) {
-        const result = await this.runDiscoveryForInput(input);
-        results.push(result);
-        
-        // Add delay between discoveries to avoid overwhelming the system
-        const delay = this.config.settings?.delay_between_discoveries || 2000;
-        await new Promise(resolve => setTimeout(resolve, delay));
+      if (enabledInputs.length === 0) {
+        logger.warn('⚠️ No enabled discovery inputs found');
+        return;
       }
+      
+      // Get current domain to process
+      const currentIndex = state.currentDomainIndex;
+      const currentInput = enabledInputs[currentIndex];
+      
+      logger.info(`📊 Processing domain ${currentIndex + 1}/${enabledInputs.length}: ${currentInput.name}`);
+      logger.info(`🔄 Domain rotation: ${currentInput.name} (${currentInput.domain})`);
+      
+      // Process the current domain
+      const result = await this.runDiscoveryForInput(currentInput);
+      
+      // Update state for next run
+      const nextIndex = this.getNextDomainIndex(currentIndex, enabledInputs.length);
+      const newState = {
+        currentDomainIndex: nextIndex,
+        lastRun: new Date().toISOString(),
+        lastProcessedDomain: currentInput.name,
+        nextDomainToProcess: enabledInputs[nextIndex]?.name || 'None'
+      };
+      
+      this.saveState(newState);
       
       const endTime = new Date();
       const duration = endTime - startTime;
       
       // Summary
-      const successful = results.filter(r => r.success && !r.skipped).length;
-      const skipped = results.filter(r => r.skipped).length;
-      const failed = results.filter(r => !r.success && !r.skipped).length;
-      const totalJobs = results.reduce((sum, r) => sum + (r.scrapedJobs?.length || 0), 0);
-      
       logger.info('📈 Discovery Job Summary:');
-      logger.info(`   - Total inputs: ${enabledInputs.length}`);
-      logger.info(`   - Successful: ${successful}`);
-      logger.info(`   - Skipped: ${skipped}`);
-      logger.info(`   - Failed: ${failed}`);
-      logger.info(`   - Total jobs discovered: ${totalJobs}`);
-      logger.info(`   - Total duration: ${duration}ms`);
+      logger.info(`   - Processed domain: ${currentInput.name}`);
+      logger.info(`   - Domain index: ${currentIndex + 1}/${enabledInputs.length}`);
+      logger.info(`   - Next domain: ${enabledInputs[nextIndex]?.name || 'None'}`);
+      logger.info(`   - Success: ${result.success}`);
+      logger.info(`   - Jobs discovered: ${result.scrapedJobs?.length || 0}`);
+      logger.info(`   - Duration: ${duration}ms`);
+      
+      if (result.errors && result.errors.length > 0) {
+        logger.warn(`⚠️ Discovery had ${result.errors.length} errors`);
+        result.errors.forEach(error => {
+          logger.error(`   - ${error.step}: ${error.error}`);
+        });
+      }
       
     } catch (error) {
       logger.error('❌ Discovery job failed:', error.message);
@@ -145,8 +201,8 @@ export class DiscoveryJob {
    */
   start() {
     // Determine interval based on environment
-    const interval = process.env.NODE_ENV === 'production' ? '*/15 * * * *' : '*/15 * * * *';
-    const intervalText = process.env.NODE_ENV === 'production' ? '15 minutes' : '15 minute';
+    const interval = process.env.NODE_ENV === 'production' ? '0 * * * *' : '0 * * * *';
+    const intervalText = process.env.NODE_ENV === 'production' ? '1 hour' : '1 hour';
     
     logger.info(`⏰ Starting Discovery Job - runs every ${intervalText}`);
     

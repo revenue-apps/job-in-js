@@ -26,8 +26,22 @@ const storageNode = async (state) => {
       throw new Error('No job data, analysis results, or dimension mapping available for storage');
     }
 
-    if (!state.job_data?.entities) {
-      throw new Error('No formatted entities available for storage');
+    if (!state.entities) {
+      console.log('StorageNode: No entities found in state');
+      console.log('StorageNode: Available state keys:', Object.keys(state));
+      console.log('StorageNode: Job data keys:', Object.keys(state.job_data || {}));
+      console.log('StorageNode: Dimension mapping available:', !!state.dimension_mapping);
+      console.log('StorageNode: Analysis results available:', !!state.analysis_results);
+      
+      // Create basic entities from available data as fallback
+      const fallbackEntities = {
+        job_title: state.job_data?.title || 'Unknown',
+        company_name: state.job_data?.company || 'Unknown',
+        inferred_sections: {}
+      };
+      
+      console.log('StorageNode: Using fallback entities:', fallbackEntities);
+      state.entities = fallbackEntities;
     }
 
     const jobData = state.job_data;
@@ -36,7 +50,7 @@ const storageNode = async (state) => {
     const domainClassification = state.domain_classification;
     const qualityMetrics = state.quality_metrics;
     const extractedContent = state.extracted_content;
-    const entities = state.job_data?.entities;
+    const entities = state.entities;
 
     // Merge all extracted dimensions
     const extractedDimensions = {};
@@ -91,7 +105,7 @@ const storageNode = async (state) => {
       experience_level: state.experience_detection?.level,
       extracted_dimensions: extractedDimensions,
       quality_metrics: qualityMetrics,
-      entities: entities,
+      entities: entities || {},
       created_at: jobData.created_at,
       updated_at: new Date().toISOString(),
       extraction_metadata: {

@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, UpdateCommand, GetCommand, QueryCommand, DeleteCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, UpdateCommand, GetCommand, QueryCommand, DeleteCommand, BatchWriteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { logger } from './logger.js';
 import crypto from 'crypto';
 
@@ -332,6 +332,24 @@ export const queryItems = async (tableName, queryParams) => {
     return result.Items;
   } catch (error) {
     logger.error(`Failed to query items from table ${tableName}:`, error.message);
+    throw error;
+  }
+};
+
+/**
+ * Scan items from DynamoDB
+ */
+export const scanItems = async (tableName, scanParams = {}) => {
+  try {
+    const scanCommand = new ScanCommand({
+      TableName: tableName,
+      ...scanParams
+    });
+
+    const result = await docClient.send(scanCommand);
+    return result.Items;
+  } catch (error) {
+    logger.error(`Failed to scan items from table ${tableName}:`, error.message);
     throw error;
   }
 };

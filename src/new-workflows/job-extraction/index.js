@@ -64,6 +64,7 @@ class JobExtractionWorkflow {
         experience_detection: { value: null },
         dimension_mapping: { value: null },
         quality_metrics: { value: null },
+        entities: { value: null },
         current_node: { value: 'job_loader' },
         errors: { value: [] },
         metadata: { value: {} }
@@ -162,6 +163,7 @@ class JobExtractionWorkflow {
         experience_detection: null,
         dimension_mapping: null,
         quality_metrics: null,
+        entities: null,
         current_node: 'job_loader',
         errors: [],
         metadata: {

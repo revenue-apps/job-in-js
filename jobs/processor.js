@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { logger } from '../src/shared/utils/logger.js';
-import { queryItems } from '../src/shared/utils/dynamoDB.js';
+import { queryItems, scanItems } from '../src/shared/utils/dynamoDB.js';
 
 /**
  * Processor Job
@@ -17,30 +17,34 @@ export class ProcessorJob {
    */
   async findOldestDiscoveredJob() {
     try {
-      // Query for jobs with status "discovered", ordered by discoveredAt
-      const queryParams = {
-        IndexName: 'status-discoveredAt-index', // Assuming this GSI exists
-        KeyConditionExpression: '#status = :status',
+      // Scan for jobs with status "discovered" and filter by timestamp
+      const scanParams = {
+        FilterExpression: '#status = :status',
         ExpressionAttributeNames: {
           '#status': 'status'
         },
         ExpressionAttributeValues: {
           ':status': 'discovered'
-        },
-        ScanIndexForward: true, // Ascending order (oldest first)
-        Limit: 1
+        }
       };
 
-      const items = await queryItems(this.tableName, queryParams);
+      const items = await scanItems(this.tableName, scanParams);
       
       if (items && items.length > 0) {
-        return items[0];
+        // Sort by timestamp to get the oldest job
+        const sortedItems = items.sort((a, b) => {
+          const timeA = new Date(a.scrapedAt || a.createdAt || 0);
+          const timeB = new Date(b.scrapedAt || b.createdAt || 0);
+          return timeA - timeB; // Ascending order (oldest first)
+        });
+        
+        return sortedItems[0];
       }
       
       return null;
       
     } catch (error) {
-      logger.error('Failed to query oldest discovered job:', error.message);
+      logger.error('Failed to scan oldest discovered job:', error.message);
       return null;
     }
   }
@@ -61,7 +65,7 @@ export class ProcessorJob {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.API_KEY || 'dev-key'}`
+          'x-api-key': process.env.API_KEY || 'test-api-key'
         },
         body: JSON.stringify({
           job_id: jd_id,
@@ -155,8 +159,8 @@ export class ProcessorJob {
    */
   start() {
     // Determine interval based on environment
-    const interval = process.env.NODE_ENV === 'production' ? '*/15 * * * *' : '*/15 * * * *';
-    const intervalText = '5 minutes';
+    const interval = '* * * * *'; // Every 1 minute in all environments
+    const intervalText = '1 minute';
     
     logger.info(`⏰ Starting Processor Job - runs every ${intervalText}`);
     

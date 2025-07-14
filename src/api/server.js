@@ -12,10 +12,15 @@ import jobApplicationRoutes from './routes/jobApplication.js';
 import healthRoutes from './routes/health.js';
 import jobDiscoveryRoutes from './routes/jobDiscovery.js';
 import jobExtractionRoutes from './routes/jobExtraction.js';
+import jobRoutes from './routes/jobs.js';
 import { enhancedStagehandClient } from '../shared/utils/enhancedStagehand.js';
+import JobManager from '../../jobs/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize job manager
+const jobManager = new JobManager();
 
 // Security middleware
 app.use(helmet());
@@ -46,6 +51,7 @@ app.use('/health', healthRoutes);
 app.use('/api/v1/job-application', jobApplicationRoutes);
 app.use('/api/v1/job-discovery', jobDiscoveryRoutes);
 app.use('/api/v1', jobExtractionRoutes);
+app.use('/api/v1/jobs', jobRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -57,6 +63,7 @@ app.use(errorHandler);
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
   try {
+    jobManager.stop();
     await enhancedStagehandClient.close();
     logger.info('Stagehand client closed successfully');
   } catch (error) {
@@ -68,6 +75,7 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
   try {
+    jobManager.stop();
     await enhancedStagehandClient.close();
     logger.info('Stagehand client closed successfully');
   } catch (error) {
@@ -84,6 +92,15 @@ function startServer() {
       logger.info(`📊 Health check: http://localhost:${PORT}/health`);
       logger.info(`🔗 API docs: http://localhost:${PORT}/api/v1/docs`);
       logger.info(`🌐 Server running on: http://localhost:${PORT}`);
+      
+      // Start job manager after server is running
+      try {
+        jobManager.start();
+        logger.info('✅ Background jobs started successfully');
+      } catch (error) {
+        logger.error('❌ Failed to start background jobs:', error.message);
+      }
+      
       resolve(server);
     });
 

@@ -5,7 +5,7 @@
   "main": "src/entry-points/jobScraper.js",
   "type": "module",
   "scripts": {
-    "start": "node src/entry-points/jobScraper.js",
+    "start": "node src/api/server.js",
     "scrape": "node src/entry-points/jobScraper.js",
     "scrape:mock": "node src/entry-points/jobScraper.js --mock",
     "apply": "node src/entry-points/jobApplicator.js",
