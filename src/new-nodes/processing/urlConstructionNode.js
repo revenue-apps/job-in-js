@@ -4,7 +4,8 @@ import OpenAI from 'openai';
 import { logger } from '../../shared/utils/logger.js';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
+  model: "gpt-4o-mini"
 });
 
 export const urlConstructionNode = async (state) => {
@@ -36,7 +37,7 @@ export const urlConstructionNode = async (state) => {
           originalTemplate: urlTemplate,
           finalUrl,
           description,
-          company: company || extractCompanyFromUrl(urlTemplate),
+          company,
           domain,
           filters,
           urlType
@@ -45,6 +46,10 @@ export const urlConstructionNode = async (state) => {
     }
     
     logger.info(`URL construction completed. Generated ${processedUrls.length} URLs`);
+    
+    console.log('🔍 URL Construction Debug - Returning state:');
+    console.log('- processedUrls.length:', processedUrls.length);
+    console.log('- processedUrls:', JSON.stringify(processedUrls, null, 2));
     
     return {
       ...state,
@@ -81,7 +86,7 @@ Filters: ${JSON.stringify(filters, null, 2)}
 Instructions:
 1. Analyze the URL template and identify all parameter placeholders (e.g., {keywords}, {location}, {experience})
 2. Use the provided filters to fill in these parameters appropriately
-3. If a parameter doesn't have a corresponding filter, use sensible defaults based on the domain and URL type
+3. If a parameter doesn't have a corresponding filter, do not include it in the final URL. for exmaple, if location is not provided, do not include it in the final URL.
 4. Ensure the final URL is properly encoded and valid
 5. Return ONLY the final URL, nothing else
 
@@ -132,45 +137,3 @@ function isValidUrl(string) {
     return false;
   }
 }
-
-function extractCompanyFromUrl(url) {
-  try {
-    const urlObj = new URL(url);
-    const hostname = urlObj.hostname.toLowerCase();
-    
-    // Extract company from various URL patterns
-    if (hostname.includes('google.com')) {
-      return 'Google';
-    } else if (hostname.includes('metacareers.com') || hostname.includes('meta.com')) {
-      return 'Meta';
-    } else if (hostname.includes('airbnb.com')) {
-      return 'Airbnb';
-    } else if (hostname.includes('microsoft.com')) {
-      return 'Microsoft';
-    } else if (hostname.includes('apple.com')) {
-      return 'Apple';
-    } else if (hostname.includes('amazon.com')) {
-      return 'Amazon';
-    } else if (hostname.includes('netflix.com')) {
-      return 'Netflix';
-    } else if (hostname.includes('github.com')) {
-      return 'GitHub';
-    } else if (hostname.includes('linkedin.com')) {
-      return 'LinkedIn';
-    } else if (hostname.includes('indeed.com')) {
-      return 'Indeed';
-    } else if (hostname.includes('glassdoor.com')) {
-      return 'Glassdoor';
-    }
-    
-    // Fallback: extract from hostname
-    const domainParts = hostname.split('.');
-    if (domainParts.length > 2) {
-      return domainParts[0].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
-    
-    return 'Unknown Company';
-  } catch (error) {
-    return 'Unknown Company';
-  }
-} 

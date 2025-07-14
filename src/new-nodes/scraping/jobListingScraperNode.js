@@ -1,149 +1,109 @@
 import { logger } from '../../shared/utils/logger.js';
 import { z } from 'zod';
-import OpenAI from 'openai';
 import { insertJobDescriptions } from '../../shared/utils/dynamoDB.js';
+import { chatCompletion } from '../../shared/utils/openai.js';
 
 export const jobListingScraperNode = async (state) => {
-  const { processedUrls, page, agent } = state;
-  
-  logger.info('Starting job listing scraper node');
+  const { currentUrl, page, agent, scrapedJobs = [] } = state;
   
   try {
-    const scrapedJobs = [];
-    
-    // Process each URL
-    for (const urlData of processedUrls) {
-      try {
-        // Navigate to the job search page
-        await page.goto(urlData.finalUrl, { waitUntil: 'networkidle' });
-        
-        // Get all URLs from the page
-        const allUrls = await page.evaluate(() => {
-          const links = Array.from(document.querySelectorAll('a[href]'));
-          return links.map(link => link.href).filter(href => href && href.length > 10);
-        });
-
-        logger.info(`Found ${allUrls.length} URLs on the page`);
-
-        // Generate prompt for OpenAI to classify URLs
-        const promptForUrlClassification = `
-You are a smart URL classifier.
-
-I will give you a list of URLs from a career site or job platform. Your task is to analyze each URL and classify whether it points to:
-
-1. A JobDetail page — a page that shows one specific job, including job title, description, location, qualifications, and apply button.
-2. A SearchPage — a job listing, results, search, filter, or dashboard page that contains multiple jobs or filters.
-
-For each URL, output in this format (one line per URL):
-URL, Type, Reason
-
-Where:
-- URL is the original URL
-- Type is either JobDetail or SearchPage
-- Reason is a very short explanation (1 sentence max)
-
-Use your understanding of URL structure and known patterns (e.g., job ID in URL, use of slugs, /jobs/results/{id} formats, presence of query params like q=, search=, etc.)
-
-Here is the list of URLs:
-${allUrls.join('\n')}
-        `;
-
-
-        // Use OpenAI to classify URLs
-        const openai = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY
-        });
-
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a smart URL classifier for job platforms. Analyze URLs and classify them as JobDetail or SearchPage."
-            },
-            {
-              role: "user",
-              content: promptForUrlClassification
-            }
-          ],
-          temperature: 0.1,
-          max_tokens: 2000
-        });
-
-        const response = completion.choices[0].message.content.trim();
-        
-        // Parse the response to extract JobDetail URLs
-        const lines = response.split('\n').filter(line => line.trim());
-        const jobDetailUrls = [];
-        
-        for (const line of lines) {
-          try {
-            const [url, type, reason] = line.split(',').map(s => s.trim());
-            if (type === 'JobDetail') {
-              jobDetailUrls.push(url);
-            }
-          } catch (error) {
-            // Skip invalid lines
-          }
-        }
-
-        const jobUrls = jobDetailUrls;
-        logger.info(`OpenAI identified ${jobUrls.length} JobDetail URLs`);
-
-        // Convert URLs to job format with company mapping
-        const jobs = jobUrls.map((url, index) => ({
-          title: `Job ${index + 1}`,
-          url: url,
-          company: urlData.company || extractCompanyFromUrl(url),
-          scrapedAt: new Date().toISOString()
-        }));
-        
-        scrapedJobs.push(...jobs);
-        
-        // Rate limiting between sites
-        await delay(3000);
-        
-      } catch (error) {
-        logger.error(`Failed to scrape ${urlData.finalUrl}:`, error.message);
-        
-        // Continue with next URL even if one fails
-        continue;
-      }
+    if (!currentUrl || !currentUrl.finalUrl) {
+      logger.error('No current URL to process');
+      return {
+        ...state,
+        errors: [...(state.errors || []), {
+          step: 'job_scraping',
+          error: 'No current URL to process',
+          timestamp: new Date().toISOString()
+        }],
+        currentStep: 'job_scraping_failed'
+      };
     }
     
-    logger.info(`Job scraping completed. Total jobs: ${scrapedJobs.length}`);
+    // Navigate to the current job search page
+    await page.goto(currentUrl.finalUrl, { waitUntil: 'networkidle' });
     
-    // Format jobs with all original input data
-    const jobDescriptions = scrapedJobs.map(job => ({
-      url: job.url,
-      company: job.company,
-      domain: urlData.domain,
-      filters: urlData.filters
+    // Use page.evaluate() to get ALL URLs from the page
+    const allUrls = await page.evaluate(() => {
+      const links = Array.from(document.querySelectorAll('a[href]'));
+      return links.map(link => link.href).filter(href => href && href.length > 10);
+    });
+
+    logger.info(`Raw URL extraction response: ${allUrls.join(', ')}`);
+
+    logger.info(`Found ${allUrls.length} URLs on the page`);
+    if (allUrls.length > 0) {
+      logger.info(`Sample URLs: ${allUrls.slice(0, 3).join(', ')}`);
+    }
+
+    // Use OpenAI to filter URLs to get only job detail URLs
+    const filterPrompt = `You are a URL filter for job platforms. I will give you a list of URLs from a job listing page. Your task is to filter and return only the URLs that point to individual job detail pages.
+
+Look for URLs that point to pages with:
+- Specific job titles
+- Job descriptions
+- Apply buttons
+- Individual job postings
+
+Return a JSON object with this structure:
+{
+  "jobDetailUrls": ["url1", "url2", ...],
+  "reasoning": "Brief explanation of filtering logic"
+}
+
+URLs to filter:
+${allUrls.join('\n')}`;
+
+    const filterResult = await chatCompletion([
+      { role: 'user', content: filterPrompt }
+    ], {
+      maxTokens: 2000,
+      temperature: 0.1
+    });
+
+    let jobDetailUrls = [];
+    let reasoning = '';
+
+    if (filterResult.success) {
+      logger.info(`OpenAI response: ${filterResult.data}`);
+      try {
+        const parsed = JSON.parse(filterResult.data);
+        jobDetailUrls = parsed.jobDetailUrls || [];
+        reasoning = parsed.reasoning || '';
+        logger.info(`OpenAI filtering reasoning: ${reasoning}`);
+      } catch (error) {
+        logger.error('Failed to parse OpenAI filtering response:', error.message);
+        logger.error('Raw OpenAI response:', filterResult.data);
+        // Fallback: treat all URLs as potential job details
+        jobDetailUrls = allUrls;
+      }
+    } else {
+      logger.error('OpenAI filtering failed:', filterResult.error);
+      // Fallback: treat all URLs as potential job details
+      jobDetailUrls = allUrls;
+    }
+
+    logger.info(`AI filtered to ${jobDetailUrls.length} JobDetail URLs`);
+    if (jobDetailUrls.length > 0) {
+      logger.info(`Sample job detail URLs: ${jobDetailUrls.slice(0, 3).join(', ')}`);
+    }
+
+    // Convert URLs to job format with company mapping
+    const newJobs = jobDetailUrls.map((url, index) => ({
+      title: `Job ${index + 1}`,
+      url: url,
+      company: currentUrl.company || extractCompanyFromUrl(url),
+      scrapedAt: new Date().toISOString()
     }));
     
-    // Store job descriptions in DynamoDB
-    let storedJobs = [];
-    let storageErrors = [];
+    // Add new jobs to existing scraped jobs
+    const updatedScrapedJobs = [...scrapedJobs, ...newJobs];
     
-    if (jobDescriptions.length > 0) {
-      try {
-        const storageResult = await insertJobDescriptions(jobDescriptions);
-        storedJobs = storageResult.results;
-        storageErrors = storageResult.errors;
-        
-        logger.info(`Stored ${storedJobs.length} jobs in DynamoDB, ${storageErrors.length} failed`);
-      } catch (error) {
-        logger.error('Failed to store jobs in DynamoDB:', error.message);
-        storageErrors.push({ error: error.message });
-      }
-    }
+    logger.info(`Job scraping completed for current URL. Found ${newJobs.length} new jobs. Total jobs: ${updatedScrapedJobs.length}`);
     
     return {
       ...state,
-      scrapedJobs,
-      jobDescriptions,
-      storedJobs,
-      storageErrors,
+      scrapedJobs: updatedScrapedJobs,
       currentStep: 'job_scraping_complete'
     };
     

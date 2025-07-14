@@ -13,13 +13,35 @@ export const jobDiscoveryStateSchema = {
   // Workflow state
   currentStep: z.string().describe('Current step in the workflow'),
   
+  // URL iteration state
+  currentUrl: z.object({
+    originalTemplate: z.string(),
+    finalUrl: z.string(),
+    description: z.string(),
+    company: z.string().optional(),
+    domain: z.string().optional(),
+    filters: z.record(z.any()).optional(),
+    urlType: z.string().optional()
+  }).optional().describe('Current URL being processed'),
+  
+  currentUrlIndex: z.number().describe('Current URL index in the processed URLs array').default(0),
+  
+  // Pagination state
+  pagination: z.object({
+    currentPage: z.number().optional(),
+    hasMorePages: z.boolean().optional(),
+    nextPageUrl: z.string().optional()
+  }).optional().describe('Pagination state for current URL'),
+  
   // Processed data
   processedUrls: z.array(z.object({
     originalTemplate: z.string(),
     finalUrl: z.string(),
     description: z.string(),
+    company: z.string().optional(),
     domain: z.string().optional(),
-    filters: z.record(z.any()).optional()
+    filters: z.record(z.any()).optional(),
+    urlType: z.string().optional()
   })).optional().describe('URLs processed and ready for scraping'),
   
   scrapedJobs: z.array(z.object({
