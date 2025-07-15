@@ -1,145 +1,86 @@
 import { StateGraph, END } from '@langchain/langgraph';
-import { urlConstructionNode } from '../../new-nodes/processing/urlConstructionNode.js';
-import { jobListingScraperNode } from '../../new-nodes/scraping/jobListingScraperNode.js';
-import { paginationScraperNode } from '../../new-nodes/scraping/paginationScraperNode.js';
-import { urlIteratorNode } from './urlIteratorNode.js';
-import { storageNode } from './storageNode.js';
-import { jobDiscoveryStateSchema } from '../../shared/utils/jobDiscoveryState.js';
-import { enhancedStagehandClient } from '../../shared/utils/enhancedStagehand.js';
+import { careerDiscoveryStateSchema } from './types.js';
 import { logger } from '../../shared/utils/logger.js';
 
-const createJobDiscoveryWorkflow = (urlCount = 5) => {
+// Dummy nodes - will be implemented later
+const careerPageFinderNode = async (state) => {
+  logger.info('Dummy: Career Page Finder Node');
+  return { ...state, careerPageUrl: 'https://careers.google.com', status: 'career_page_found' };
+};
+
+const jobListingsNavigatorNode = async (state) => {
+  logger.info('Dummy: Job Listings Navigator Node');
+  return { ...state, jobListingsUrl: 'https://careers.google.com/jobs', status: 'job_listings_found' };
+};
+
+const filterAnalyzerNode = async (state) => {
+  logger.info('Dummy: Filter Analyzer Node');
+  return { 
+    ...state, 
+    filteredJobUrl: 'https://careers.google.com/jobs?q=engineer&location=remote&type=full-time',
+    urlParameters: { q: 'job title search', location: 'location filter', type: 'employment type' },
+    status: 'filters_analyzed' 
+  };
+};
+
+const metadataConstructorNode = async (state) => {
+  logger.info('Dummy: Metadata Constructor Node');
+  return { ...state, status: 'metadata_constructed' };
+};
+
+const createCareerDiscoveryWorkflow = () => {
   const workflow = new StateGraph({
-    channels: jobDiscoveryStateSchema
+    channels: careerDiscoveryStateSchema
   });
 
   // Add nodes
-  workflow.addNode('url_construction', urlConstructionNode);
-  workflow.addNode('url_iterator', urlIteratorNode);
-  workflow.addNode('job_scraper', jobListingScraperNode);
-  workflow.addNode('pagination_scraper', paginationScraperNode);
-  workflow.addNode('storage', storageNode);
+  workflow.addNode('career_page_finder', careerPageFinderNode);
+  workflow.addNode('job_listings_navigator', jobListingsNavigatorNode);
+  workflow.addNode('filter_analyzer', filterAnalyzerNode);
+  workflow.addNode('metadata_constructor', metadataConstructorNode);
 
-  // Add edges
-  workflow.addEdge('url_construction', 'url_iterator');
-  workflow.addConditionalEdges('url_iterator', shouldContinueToNextUrl);
-  workflow.addEdge('job_scraper', 'pagination_scraper');
-  workflow.addConditionalEdges('pagination_scraper', shouldContinueToNextPage);
-  workflow.addEdge('storage', END);
+  // Linear flow - no conditional edges needed
+  workflow.addEdge('career_page_finder', 'job_listings_navigator');
+  workflow.addEdge('job_listings_navigator', 'filter_analyzer');
+  workflow.addEdge('filter_analyzer', 'metadata_constructor');
+  workflow.addEdge('metadata_constructor', END);
 
   // Set entry point
-  workflow.setEntryPoint('url_construction');
+  workflow.setEntryPoint('career_page_finder');
 
-  // Calculate recursion limit dynamically
-  const MAX_PAGES_PER_URL = 10;
-  const totalIterations = urlCount + (urlCount * MAX_PAGES_PER_URL); // URLs + pages
-  const recursionLimit = Math.max(100, totalIterations + 100); // Minimum 100, add buffer
-
-  logger.info(`📊 Dynamic recursion limit calculation:`);
-  logger.info(`- URLs: ${urlCount}`);
-  logger.info(`- Max pages per URL: ${MAX_PAGES_PER_URL}`);
-  logger.info(`- Total iterations: ${totalIterations}`);
-  logger.info(`- Recursion limit: ${recursionLimit}`);
-
-  const compiledWorkflow = workflow.compile({
-    recursionLimit: recursionLimit,
-    checkpointer: undefined
-  });
-
-  logger.info(`📊 Compiled workflow recursion limit: ${recursionLimit}`);
-
-  return compiledWorkflow;
+  return workflow.compile();
 };
 
-export const runJobDiscoveryWorkflow = async (configPath, domain = null, filters = {}) => {
-  logger.info('🚀 Starting Job Discovery Workflow');
+export const runCareerDiscoveryWorkflow = async (companies) => {
+  logger.info('🚀 Starting Career Discovery Workflow');
 
   try {
-    // Use enhanced stagehand client
-    await enhancedStagehandClient.start();
-
-    // Initialize page and agent
-    const page = await enhancedStagehandClient.newPage();
-    const agent = await enhancedStagehandClient.newAgent();
-
-    // Read CSV to get URL count for recursion limit
-    const { readFileSync } = await import('fs');
-    const { parse } = await import('csv-parse/sync');
-
-    const csvContent = readFileSync(configPath, 'utf-8');
-    const records = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true
-    });
-
-    const urlCount = records.length;
-    logger.info(`📊 Found ${urlCount} URLs in config file`);
-
+    const workflow = createCareerDiscoveryWorkflow();
+    
     // Create initial state
     const initialState = {
-      configPath,
-      domain,
-      filters,
-      page,
-      agent,
+      companies,
+      currentCompanyIndex: 0,
+      companyName: companies[0]?.company_name || '',
+      page: null,
+      agent: null,
+      careerPageUrl: '',
+      jobListingsUrl: '',
+      filteredJobUrl: '',
+      urlParameters: {},
       currentStep: 'start',
-      processedUrls: [],
-      scrapedJobs: [],
+      status: '',
       errors: [],
-      currentUrlIndex: 0
+      metadata: {}
     };
 
-    // Run workflow with dynamic recursion limit
-    const workflow = createJobDiscoveryWorkflow(urlCount);
-    logger.info(`📊 About to invoke workflow with ${urlCount} URLs`);
-    const result = await workflow.invoke(initialState, {
-      recursionLimit: Math.max(100, urlCount * 15) // Ensure high enough limit
-    });
-
-    logger.info('✅ Job Discovery Workflow completed');
-    logger.info(`📊 Processed ${result.processedUrls?.length || 0} URLs`);
-    logger.info(`💼 Scraped ${result.scrapedJobs?.length || 0} jobs`);
-
+    const result = await workflow.invoke(initialState);
+    
+    logger.info('✅ Career Discovery Workflow completed');
     return result;
 
   } catch (error) {
-    logger.error('❌ Job Discovery Workflow failed:', error.message);
+    logger.error('❌ Career Discovery Workflow failed:', error.message);
     throw error;
   }
-};
-
-
-// Conditional edge functions
-const shouldContinueToNextPage = (state) => {
-  const hasMorePages = state.pagination?.hasMorePages || false;
-  const nextPageUrl = state.pagination?.nextPageUrl;
-
-  logger.info(`Pagination decision: hasMorePages=${hasMorePages}, nextPageUrl=${nextPageUrl}`);
-
-  if (hasMorePages && nextPageUrl) {
-    logger.info('🔄 Continuing to next page for current URL');
-    return 'job_scraper';
-  } else {
-    logger.info('✅ No more pages for current URL, moving to next URL');
-    return 'url_iterator';
-  }
-};
-
-const shouldContinueToNextUrl = (state) => {
-  const processedUrls = state.processedUrls || [];
-  const currentUrlIndex = state.currentUrlIndex;
-
-  logger.info(`URL iteration decision: currentUrlIndex=${currentUrlIndex}, totalUrls=${processedUrls.length}`);
-  const { currentStep } = state;
-  if (currentStep === 'url_iterator_complete') {
-    logger.info('✅ All URLs processed, moving to storage');
-    return 'storage';
-  } else {
-    logger.info('🔄 Continuing to next URL');
-    return 'job_scraper'
-  }
-};
-
-export const runJobDiscoveryFromConfig = async (configPath, domain = null, filters = {}) => {
-  return await runJobDiscoveryWorkflow(configPath, domain, filters);
 };
