@@ -1,8 +1,8 @@
 import { logger } from '../../shared/utils/logger.js';
-import careerPageFinderNode from '../../new-workflows/job-discovery/nodes/careerPageFinderNode.js';
-import jobListingsNavigatorNode from '../../new-workflows/job-discovery/nodes/jobListingsNavigatorNode.js';
-import filterAnalyzerNode from '../../new-workflows/job-discovery/nodes/filterAnalyzerNode.js';
-import metadataConstructorNode from '../../new-workflows/job-discovery/nodes/metadataConstructorNode.js';
+import careerPageFinderNode from '../../new-workflows/career-page-discovery/nodes/careerPageFinderNode.js';
+import jobListingsNavigatorNode from '../../new-workflows/career-page-discovery/nodes/jobListingsNavigatorNode.js';
+import filterAnalyzerNode from '../../new-workflows/career-page-discovery/nodes/filterAnalyzerNode.js';
+import metadataConstructorNode from '../../new-workflows/career-page-discovery/nodes/metadataConstructorNode.js';
 
 /**
  * Unit Testing Framework for Career Discovery Nodes

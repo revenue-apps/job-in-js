@@ -27,6 +27,8 @@
     "test:career-discovery:node3": "node test-career-discovery-nodes.js --node=3",
     "test:career-discovery:node4": "node test-career-discovery-nodes.js --node=4",
     "test:career-discovery:integration": "node test-career-discovery-nodes.js --integration",
+    "test:career-discovery:real": "node test-career-page-finder-real.js",
+    "test:career-discovery:real:single": "node test-career-page-finder-real.js --company=Google",
     "test:all": "npm run test:scraping && npm run test:application && npm run test:career-discovery",
     "dev": "node --watch src/entry-points/jobScraper.js",
     "lint": "eslint src/",

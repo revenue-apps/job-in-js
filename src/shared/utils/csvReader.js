@@ -2,6 +2,37 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import { logger } from './logger.js';
 
+export async function readCsvFile(filePath) {
+  logger.info('Reading CSV file', { filePath });
+  
+  return new Promise((resolve, reject) => {
+    const data = [];
+    
+    if (!fs.existsSync(filePath)) {
+      logger.error('CSV file not found', { filePath });
+      reject(new Error(`CSV file not found: ${filePath}`));
+      return;
+    }
+
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (row) => {
+        data.push(row);
+      })
+      .on('end', () => {
+        logger.info('CSV reading completed', { 
+          totalRows: data.length,
+          filePath 
+        });
+        resolve(data);
+      })
+      .on('error', (error) => {
+        logger.error('Error reading CSV file', { error: error.message, filePath });
+        reject(error);
+      });
+  });
+}
+
 export async function readJobUrlsFromCSV(filePath) {
   logger.info('Reading job URLs from CSV', { filePath });
   
