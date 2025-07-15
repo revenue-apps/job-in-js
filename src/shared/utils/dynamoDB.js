@@ -272,7 +272,13 @@ export const updateItem = async (tableName, key, updates) => {
     const expressionAttributeNames = {};
     const expressionAttributeValues = {};
 
-    Object.entries(updates).forEach(([key, value]) => {
+    // Filter out reserved fields and null/undefined values
+    const filteredUpdates = Object.entries(updates).filter(([key, value]) => {
+      const reservedFields = ['created_at', 'id', 'jd_id']; // Add other reserved fields as needed
+      return !reservedFields.includes(key) && value !== null && value !== undefined;
+    });
+
+    filteredUpdates.forEach(([key, value]) => {
       const attrName = `#${key}`;
       const attrValue = `:${key}`;
       

@@ -62,23 +62,18 @@ async function dimensionMapperNode(state) {
 
     if (!state.experience_detection || !state.experience_detection.level) {
       console.error('DimensionMapperNode: No experience level detection available');
-      return {
-        ...state,
-        errors: [
-          ...state.errors,
-          {
-            node: 'dimension_mapper',
-            error: 'No experience level detection available for dimension mapping',
-            timestamp: new Date().toISOString()
-          }
-        ],
-        metadata: {
-          ...state.metadata,
-          dimension_mapper_failed: true,
-          dimension_mapper_error: 'No experience level detection available',
-          dimension_mapper_timestamp: new Date().toISOString()
-        }
+      console.log('DimensionMapperNode: Available state keys:', Object.keys(state));
+      console.log('DimensionMapperNode: Experience detection:', state.experience_detection);
+      
+      // Create fallback experience level
+      const fallbackExperience = {
+        level: 'mid',
+        confidence: 0.5,
+        detectedAt: new Date().toISOString()
       };
+      
+      console.log('DimensionMapperNode: Using fallback experience level:', fallbackExperience);
+      state.experience_detection = fallbackExperience;
     }
 
     const rawText = state.analysis_results.rawText;

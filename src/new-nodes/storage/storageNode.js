@@ -22,8 +22,21 @@ const storageNode = async (state) => {
   console.log('Entities Keys:', Object.keys(state.entities || {}));
   console.log('=== STORAGE NODE END ===');
   try {
-    if (!state.job_data || !state.analysis_results || !state.dimension_mapping) {
-      throw new Error('No job data, analysis results, or dimension mapping available for storage');
+    if (!state.job_data || !state.analysis_results) {
+      throw new Error('No job data or analysis results available for storage');
+    }
+
+    // Handle missing dimension mapping with fallback
+    if (!state.dimension_mapping) {
+      console.log('StorageNode: No dimension mapping available, creating fallback...');
+      state.dimension_mapping = {
+        dimensions: {},
+        total_dimensions: 0,
+        required_dimensions: 0,
+        extracted_required: 0,
+        completeness_score: 0,
+        mappedAt: new Date().toISOString()
+      };
     }
 
     if (!state.entities) {
@@ -155,8 +168,8 @@ const storageNode = async (state) => {
         ...storageData.extraction_metadata
       };
       
-      // Remove key fields that can't be updated
-      const { jd_id, ...updateData } = {
+      // Remove key fields that can't be updated and exclude created_at
+      const { jd_id, created_at, ...updateData } = {
         ...existingRecord,
         ...storageData,
         entities: storageData.entities,

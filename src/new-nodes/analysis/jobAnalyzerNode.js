@@ -55,13 +55,20 @@ async function jobAnalyzerNode(state) {
       extractedAt: new Date().toISOString()
     };
     
+    // Create the structure expected by dimension mapper
+    const analysisResults = {
+      rawText: rawText,
+      company: analysis.company,
+      extractedAt: new Date().toISOString()
+    };
+    
     console.log(`JobAnalyzerNode: Successfully extracted company: ${jobAnalysis.company}`);
     console.log(`JobAnalyzerNode: Successfully extracted company raw text: ${jobAnalysis?.rawText}`);
     
     // Return updated state with company extraction
     return {
       ...state,
-      analysis_results: jobAnalysis,
+      analysis_results: analysisResults,
       current_node: 'job_analyzer',
       metadata: {
         ...state.metadata,
