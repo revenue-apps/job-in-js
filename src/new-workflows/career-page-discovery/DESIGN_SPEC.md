@@ -1,12 +1,16 @@
-# Career Page Discovery Pipeline
-
-A simple, CSV-based pipeline to discover and analyze company career pages using Stagehand browser automation.
+# Career Page Discovery Pipeline - Design Specification
 
 ## Overview
 
-This pipeline takes a CSV list of company names and discovers their career pages, job listings pages, and job search filters. Results are appended to an existing CSV file with simple status tracking.
+A simple, CSV-based pipeline to discover and analyze company career pages using Stagehand browser automation. The pipeline takes a CSV list of company names and discovers their career pages, job listings pages, and job search filters, then appends valid metadata to an existing CSV file.
 
-## Pipeline Nodes
+## Pipeline Architecture
+
+```
+Company Name → Career Page Finder → Job Listings Navigator → Filter Analyzer → Metadata Constructor → CSV Output
+```
+
+## Node Specifications
 
 ### Node 1: Career Page Finder
 
@@ -167,25 +171,32 @@ company_name,career_page_url,job_listings_url,filtered_job_url,available_filters
 "Google","https://careers.google.com","https://careers.google.com/jobs","https://careers.google.com/jobs?q=engineer&location=remote&type=full-time","search|location|job_type","q=title,location=city,type=employment","2024-01-15","discovered"
 ```
 
-## Error Handling
+## Error Handling Strategy
 
 - **Node failures** break the workflow and update CSV status
 - **Failed companies** are skipped in subsequent runs
 - **Simple logging** to track progress and errors
 - **No complex state management** - just CSV status updates
 
-## Configuration
+## Configuration Parameters
 
 - **Companies per run**: Configurable batch size
 - **Confidence threshold**: 0.5 for AI search results
 - **Delay between requests**: 2-3 seconds to avoid rate limiting
 - **Retry attempts**: 2 for each node before marking as failed
 
-## Usage
+## Key Design Principles
 
-```javascript
-const pipeline = new CareerPageDiscoveryPipeline();
-await pipeline.processCompanies(companiesList, batchSize);
-```
+1. **Simplicity**: CSV-based status tracking, no complex state management
+2. **Reliability**: Incognito pages, fallback strategies, error handling
+3. **Efficiency**: Batch processing, configurable limits
+4. **Maintainability**: Clear node separation, simple interfaces
+5. **Extensibility**: Easy to add new filter types or discovery methods
 
-The pipeline processes companies in batches, appending results directly to the CSV file with simple status tracking.
+## Implementation Notes
+
+- Uses Stagehand for browser automation
+- AI prompts for intelligent discovery
+- Local JSON stores for common patterns
+- Direct CSV manipulation for status tracking
+- No external state management systems 

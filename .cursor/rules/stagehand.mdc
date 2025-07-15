@@ -1,12 +1,40 @@
 ---
-description: 
-globs: 
+description: Stagehand browser automation SDK - integration rules, documentation links, and best practices for job scraping workflows
 alwaysApply: false
 ---
-// Stagehand Integration Rules (JS Only)
-
 // 🚫 Do not use TypeScript
 - All API integration code must be written in plain JavaScript.
+
+// 📚 Stagehand Documentation & Resources
+
+// 🔗 Official Documentation
+- **Main Documentation**: https://docs.browserbase.com/
+- **Stagehand SDK**: https://docs.browserbase.com/stagehand
+- **API Reference**: https://docs.browserbase.com/stagehand/api
+- **Getting Started**: https://docs.browserbase.com/stagehand/getting-started
+- **Examples**: https://docs.browserbase.com/stagehand/examples
+
+// 🛠️ Development Resources
+- **GitHub Repository**: https://github.com/browserbasehq/stagehand
+- **NPM Package**: https://www.npmjs.com/package/@browserbasehq/stagehand
+- **Playground**: https://playground.browserbase.com/
+- **Discord Community**: https://discord.gg/browserbase
+
+// 📖 Key Documentation Sections
+- **Installation**: https://docs.browserbase.com/stagehand/installation
+- **Authentication**: https://docs.browserbase.com/stagehand/authentication
+- **Page Object**: https://docs.browserbase.com/stagehand/page
+- **Agent Object**: https://docs.browserbase.com/stagehand/agent
+- **Extraction**: https://docs.browserbase.com/stagehand/extraction
+- **Navigation**: https://docs.browserbase.com/stagehand/navigation
+- **Error Handling**: https://docs.browserbase.com/stagehand/error-handling
+
+// 🎯 Core Concepts
+- **Page Methods**: https://docs.browserbase.com/stagehand/page#methods
+- **Agent Methods**: https://docs.browserbase.com/stagehand/agent#methods
+- **Extraction API**: https://docs.browserbase.com/stagehand/extraction
+- **Schema Validation**: https://docs.browserbase.com/stagehand/schemas
+- **Environment Setup**: https://docs.browserbase.com/stagehand/environment
 
 // 🌐 API Usage
 - Stagehand endpoint must be set via environment variable (`STAGEHAND_API_URL`).
@@ -20,6 +48,42 @@ alwaysApply: false
 // ⚠️ Error Handling
 - Log errors as `[Stagehand Error] <job_url> — <error_message>`.
 - If DNS/timeout error, retry once with exponential backoff.
+- Do not allow Stagehand failures to block the overall scraping pipeline.
+
+// 🧪 Dev & Test
+- Never call Stagehand in dev/test without an explicit mock.
+- Provide at least 2 mock job HTML files to simulate Stagehand input.
+
+// 🔧 Configuration
+- **Environment Variables**: https://docs.browserbase.com/stagehand/configuration
+- **Model Configuration**: https://docs.browserbase.com/stagehand/models
+- **Browser Settings**: https://docs.browserbase.com/stagehand/browser-settings
+- **Timeout Configuration**: https://docs.browserbase.com/stagehand/timeouts
+
+// 📝 Code Examples
+- **Basic Usage**: https://docs.browserbase.com/stagehand/examples/basic
+- **Form Filling**: https://docs.browserbase.com/stagehand/examples/forms
+- **Data Extraction**: https://docs.browserbase.com/stagehand/examples/extraction
+- **Navigation**: https://docs.browserbase.com/stagehand/examples/navigation
+- **Error Handling**: https://docs.browserbase.com/stagehand/examples/error-handling
+
+// 🚀 Advanced Features
+- **Multi-page Workflows**: https://docs.browserbase.com/stagehand/workflows
+- **Custom Schemas**: https://docs.browserbase.com/stagehand/schemas
+- **Performance Optimization**: https://docs.browserbase.com/stagehand/performance
+- **Debugging**: https://docs.browserbase.com/stagehand/debugging
+
+// 🐛 Troubleshooting
+- **Common Issues**: https://docs.browserbase.com/stagehand/troubleshooting
+- **Debug Mode**: https://docs.browserbase.com/stagehand/debugging
+- **Logging**: https://docs.browserbase.com/stagehand/logging
+- **Performance Issues**: https://docs.browserbase.com/stagehand/performance
+
+// 📊 Monitoring & Analytics
+- **Usage Dashboard**: https://app.browserbase.com/dashboard
+- **API Usage**: https://app.browserbase.com/usage
+- **Error Tracking**: https://app.browserbase.com/errors
+- **Performance Metrics**: https://app.browserbase.com/metrics
 - Do not allow Stagehand failures to block the overall scraping pipeline.
 
 // 🧪 Dev & Test
