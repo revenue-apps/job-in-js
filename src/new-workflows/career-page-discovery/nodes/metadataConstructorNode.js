@@ -9,9 +9,11 @@ import { logger } from '../../../../src/shared/utils/logger.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const MOCK_CSV = "https://www.ibm.com/in-en/careers/search?q=software%20engineer, this url specified has q as query parameter that takes search query";
 
 const metadataConstructorNode = async (state) => {
   const { 
@@ -20,43 +22,20 @@ const metadataConstructorNode = async (state) => {
     jobListingsUrl, 
     filteredJobUrl,
     urlParameters,
-    filters 
+    filters
   } = state;
   
   logger.info('Starting Metadata Constructor Node', { companyName });
   
   try {
-    // Step 1: Validate Input Data
-    const validationResult = validateInputData(state);
-    if (!validationResult.isValid) {
-      logger.error('Input validation failed', { 
-        companyName, 
-        errors: validationResult.errors 
-      });
-      
-      return {
-        ...state,
-        status: 'metadata_construction_failed',
-        errors: [...(state.errors || []), ...validationResult.errors],
-        currentStep: 'metadata_constructor'
-      };
-    }
+
 
     // Step 2: Build Filter Summary
-    const availableFilters = buildFilterSummary(filters, urlParameters);
+    const metadata = buildFilterSummary(filters, urlParameters, jobListingsUrl);
     
-    // Step 3: Create CSV Row
-    const metadata = createCSVRow({
-      companyName,
-      careerPageUrl,
-      jobListingsUrl,
-      filteredJobUrl,
-      availableFilters,
-      urlParameters
-    });
 
     // Step 4: Append to CSV File
-    const csvResult = await appendToCSV(metadata);
+    const csvResult = await appendToCSV(jobListingsUrl, metadata);
     
     if (!csvResult.success) {
       logger.error('Failed to append to CSV', { 
@@ -75,11 +54,11 @@ const metadataConstructorNode = async (state) => {
 
     // Step 5: Update Status
     logger.info('Metadata construction completed successfully', { 
-      companyName,
-      availableFilters,
-      csvFile: csvResult.filePath
+        metadata,
     });
     
+    logger.info(`csv row appended successfully`, { row });
+
     return {
       ...state,
       metadata,
@@ -103,121 +82,26 @@ const metadataConstructorNode = async (state) => {
 };
 
 /**
- * Step 1: Validate Input Data
- */
-function validateInputData(state) {
-  const errors = [];
-  const required = ['companyName', 'careerPageUrl', 'jobListingsUrl', 'filteredJobUrl'];
-  
-  for (const field of required) {
-    if (!state[field]) {
-      errors.push(`Missing required field: ${field}`);
-    }
-  }
-  
-  // Validate URL formats
-  if (state.careerPageUrl && !isValidUrl(state.careerPageUrl)) {
-    errors.push(`Invalid career page URL: ${state.careerPageUrl}`);
-  }
-  
-  if (state.jobListingsUrl && !isValidUrl(state.jobListingsUrl)) {
-    errors.push(`Invalid job listings URL: ${state.jobListingsUrl}`);
-  }
-  
-  if (state.filteredJobUrl && !isValidUrl(state.filteredJobUrl)) {
-    errors.push(`Invalid filtered job URL: ${state.filteredJobUrl}`);
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-/**
  * Step 2: Build Filter Summary
  */
-function buildFilterSummary(filters, urlParameters) {
-  const filterTypes = [];
-  
-  // Extract filter types from filters object
-  if (filters) {
-    Object.entries(filters).forEach(([key, filter]) => {
-      if (filter && filter.isFound) {
-        switch (key) {
-          case 'domain':
-            filterTypes.push('search');
-            break;
-          case 'location':
-            filterTypes.push('location');
-            break;
-          case 'department':
-            filterTypes.push('department');
-            break;
-          default:
-            filterTypes.push(key);
-        }
-      }
-    });
-  }
-  
-  // Extract from URL parameters if filters object is empty
-  if (filterTypes.length === 0 && urlParameters) {
-    Object.keys(urlParameters).forEach(key => {
-      switch (key) {
-        case 'domain':
-        case 'search':
-          filterTypes.push('search');
-          break;
-        case 'location':
-          filterTypes.push('location');
-          break;
-        case 'department':
-          filterTypes.push('department');
-          break;
-        case 'jobType':
-          filterTypes.push('job_type');
-          break;
-        default:
-          filterTypes.push(key);
-      }
-    });
-  }
-  
-  // Remove duplicates and return pipe-separated string
-  return [...new Set(filterTypes)].join('|');
-}
+async function buildFilterSummary(filters, url, companyName) {
+  const prompt = `build metadata for the job search url for company ${companyName}. filter list are ${JSON.stringify(filters)} and url is ${url}.
+  example is ${MOCK_CSV}`
+  const { success, data, error } = await chatCompletion(prompt, {
+    model: 'gpt-4o-mini',
+    responseFormat: { type: 'string' }
+  })
 
-/**
- * Step 3: Create CSV Row
- */
-function createCSVRow(data) {
-  const discoveryDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-  
-  // Build URL parameters string
-  let urlParamsString = '';
-  if (data.urlParameters && Object.keys(data.urlParameters).length > 0) {
-    urlParamsString = Object.entries(data.urlParameters)
-      .map(([key, value]) => `${key}=${value}`)
-      .join(',');
+  if (success) {
+    return data;
   }
-  
-  return {
-    company_name: data.companyName,
-    career_page_url: data.careerPageUrl,
-    job_listings_url: data.jobListingsUrl,
-    filtered_job_url: data.filteredJobUrl,
-    available_filters: data.availableFilters,
-    url_parameters: urlParamsString,
-    discovery_date: discoveryDate,
-    status: 'discovered'
-  };
-}
 
+  return null;
+}
 /**
  * Step 4: Append to CSV File
  */
-async function appendToCSV(metadata) {
+async function appendToCSV(url, metadata) {
   try {
     const csvFilePath = path.join(__dirname, '../../../data/job_discovery_urls.csv');
     
@@ -232,14 +116,8 @@ async function appendToCSV(metadata) {
     
     // Prepare CSV row
     const csvRow = [
-      `"${metadata.company_name}"`,
-      `"${metadata.career_page_url}"`,
-      `"${metadata.job_listings_url}"`,
-      `"${metadata.filtered_job_url}"`,
-      `"${metadata.available_filters}"`,
-      `"${metadata.url_parameters}"`,
-      `"${metadata.discovery_date}"`,
-      `"${metadata.status}"`
+      `"${url}"`,
+      `"${metadata.job_listings_url}"`
     ].join(',');
     
     if (!fileExists) {
@@ -274,18 +152,6 @@ async function appendToCSV(metadata) {
       success: false,
       error: error.message
     };
-  }
-}
-
-/**
- * Helper: Validate URL format
- */
-function isValidUrl(url) {
-  try {
-    new URL(url);
-    return true;
-  } catch (error) {
-    return false;
   }
 }
 
