@@ -1,0 +1,77 @@
+now# Job-in-JS Development Rules
+
+## General Development Guidelines
+- Always follow TypeScript best practices
+- Use proper error handling and logging
+- Maintain clean, readable code structure
+- Add comprehensive documentation for complex functions
+- Use meaningful variable and function names
+
+## Workflow Development
+- Use LangGraph for workflow orchestration
+- Implement proper state management
+- Add comprehensive error handling
+- Include detailed logging for debugging
+- Create unit tests for all nodes
+
+## API Development
+- Follow RESTful conventions
+- Implement proper input validation
+- Add comprehensive error responses
+- Use appropriate HTTP status codes
+- Include API documentation
+
+## Database Operations
+- Use proper connection pooling
+- Implement transaction handling
+- Add data validation
+- Include error recovery mechanisms
+- Use prepared statements for security
+
+## Testing
+- Write unit tests for all functions
+- Include integration tests for workflows
+- Add error scenario testing
+- Test edge cases and boundary conditions
+- Maintain good test coverage
+
+## Documentation
+- Add JSDoc comments for all functions
+- Include usage examples
+- Document complex algorithms
+- Add troubleshooting guides
+- Keep README files updated
+
+## Performance
+- Optimize database queries
+- Implement caching where appropriate
+- Use efficient algorithms
+- Monitor memory usage
+- Profile performance bottlenecks
+
+## Security
+- Validate all inputs
+- Sanitize data before storage
+- Use secure authentication methods
+- Implement proper authorization
+- Follow OWASP guidelines
+
+## Code Quality
+- Use ESLint for code linting
+- Follow consistent formatting
+- Remove unused imports
+- Fix all linting errors
+- Use meaningful commit messages
+
+## clarify-before-code: cbc
+When asked to implement anything, ALWAYS ask clarifying questions until 95% confident about requirements before writing any code. Ask about:
+- Technical details and specifications
+- Business requirements and use cases
+- Edge cases and error scenarios
+- Integration points and dependencies
+- Performance and scalability requirements
+- Security considerations
+- Testing requirements
+- Documentation needs
+
+Only proceed with implementation after gathering sufficient information to be 95% confident in the solution approach. 
