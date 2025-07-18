@@ -18,6 +18,17 @@ const filterAnalyzerNode = async (state) => {
   const { jobListingsUrl, page } = state;
   
   logger.info('Starting Filter Analyzer Node', { jobListingsUrl });
+  logger.info('Filter Analyzer - Input State:', { 
+    companyName: state.companyName,
+    page: state.page ? 'Page exists' : 'No page',
+    status: state.status,
+    currentStep: state.currentStep,
+    careerPageUrl: state.careerPageUrl,
+    jobListingsUrl: state.jobListingsUrl,
+    filteredJobUrl: state.filteredJobUrl,
+    metadata: state.metadata,
+    errors: state.errors
+  });
   
   try {
     if (!page) {

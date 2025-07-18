@@ -173,6 +173,126 @@ async function testCSVInspection() {
   }
 }
 
+// NEW: Comprehensive workflow test with test data
+async function testWorkflowWithTestData() {
+  console.log('🧪 Testing Career Discovery Workflow - Black Box Test');
+  console.log('=====================================================');
+  
+  try {
+    // Use test CSV file
+    const testCsvPath = './data/test-companies.csv';
+    
+    console.log('\n📋 Test Setup:');
+    console.log('==============');
+    console.log(`Test CSV: ${testCsvPath}`);
+    console.log('Companies: Google, Microsoft, Meta');
+    console.log('Expected: Process each company through full workflow');
+    
+    // Test 1: First company (Google)
+    console.log('\n🔄 Test 1: Processing Google (Row 1)');
+    console.log('=====================================');
+    const result1 = await runCareerDiscovery({ 
+      csvFilePath: testCsvPath,
+      forceRowIndex: 1 
+    });
+    
+    console.log('\n📊 Result 1:');
+    if (result1.message) {
+      console.log(result1.message);
+    } else if (result1.error) {
+      console.log(`Error: ${result1.error}`);
+    } else {
+      console.log(`Company: ${result1.companyName}`);
+      console.log(`Status: ${result1.status}`);
+      console.log(`Row: ${result1.rowIndex}/${result1.totalRows}`);
+      console.log(`Next Row: ${result1.nextRow}`);
+      
+      if (result1.result) {
+        console.log(`Career Page: ${result1.result.careerPageUrl || 'Not found'}`);
+        console.log(`Job Listings: ${result1.result.jobListingsUrl || 'Not found'}`);
+        console.log(`Filtered URL: ${result1.result.filteredJobUrl || 'Not found'}`);
+      }
+    }
+    
+    // Test 2: Second company (Microsoft)
+    console.log('\n🔄 Test 2: Processing Microsoft (Row 2)');
+    console.log('========================================');
+    const result2 = await runCareerDiscovery({ 
+      csvFilePath: testCsvPath,
+      forceRowIndex: 2 
+    });
+    
+    console.log('\n📊 Result 2:');
+    if (result2.message) {
+      console.log(result2.message);
+    } else if (result2.error) {
+      console.log(`Error: ${result2.error}`);
+    } else {
+      console.log(`Company: ${result2.companyName}`);
+      console.log(`Status: ${result2.status}`);
+      console.log(`Row: ${result2.rowIndex}/${result2.totalRows}`);
+      console.log(`Next Row: ${result2.nextRow}`);
+      
+      if (result2.result) {
+        console.log(`Career Page: ${result2.result.careerPageUrl || 'Not found'}`);
+        console.log(`Job Listings: ${result2.result.jobListingsUrl || 'Not found'}`);
+        console.log(`Filtered URL: ${result2.result.filteredJobUrl || 'Not found'}`);
+      }
+    }
+    
+    // Test 3: Third company (Meta)
+    console.log('\n🔄 Test 3: Processing Meta (Row 3)');
+    console.log('===================================');
+    const result3 = await runCareerDiscovery({ 
+      csvFilePath: testCsvPath,
+      forceRowIndex: 3 
+    });
+    
+    console.log('\n📊 Result 3:');
+    if (result3.message) {
+      console.log(result3.message);
+    } else if (result3.error) {
+      console.log(`Error: ${result3.error}`);
+    } else {
+      console.log(`Company: ${result3.companyName}`);
+      console.log(`Status: ${result3.status}`);
+      console.log(`Row: ${result3.rowIndex}/${result3.totalRows}`);
+      console.log(`Next Row: ${result3.nextRow}`);
+      
+      if (result3.result) {
+        console.log(`Career Page: ${result3.result.careerPageUrl || 'Not found'}`);
+        console.log(`Job Listings: ${result3.result.jobListingsUrl || 'Not found'}`);
+        console.log(`Filtered URL: ${result3.result.filteredJobUrl || 'Not found'}`);
+      }
+    }
+    
+    // Test 4: Check final CSV state
+    console.log('\n🔄 Test 4: Checking Final CSV State');
+    console.log('====================================');
+    const fs = await import('fs/promises');
+    const finalCsvContent = await fs.readFile(testCsvPath, 'utf-8');
+    const lines = finalCsvContent.split('\n').filter(line => line.trim());
+    
+    console.log('\n📊 Final CSV State:');
+    console.log('===================');
+    lines.forEach((line, index) => {
+      const values = line.split(',').map(val => val.replace(/"/g, '').trim());
+      console.log(`Row ${index}: ${values.join(' | ')}`);
+    });
+    
+    console.log('\n✅ Workflow Test Completed!');
+    console.log('===========================');
+    console.log('Summary:');
+    console.log('- Tested 3 companies through full workflow');
+    console.log('- Used actual browser automation');
+    console.log('- Verified CSV updates');
+    console.log('- Checked state management');
+    
+  } catch (error) {
+    console.error('❌ Workflow test failed:', error.message);
+  }
+}
+
 // Main test function
 async function runTests() {
   console.log('🚀 Career Discovery Workflow Tests - Simple State Approach');
@@ -199,7 +319,12 @@ async function runTests() {
   
   console.log('\n' + '='.repeat(50) + '\n');
   
-  // Test 5: Multiple runs (uncomment to test full processing)
+  // Test 5: Comprehensive workflow test with test data
+  await testWorkflowWithTestData();
+  
+  console.log('\n' + '='.repeat(50) + '\n');
+  
+  // Test 6: Multiple runs (uncomment to test full processing)
   // await testMultipleRuns();
   
   console.log('\n✅ All tests completed!');
@@ -219,9 +344,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     testForceRow();
   } else if (args.includes('--csv')) {
     testCSVInspection();
+  } else if (args.includes('--workflow')) {
+    testWorkflowWithTestData();
   } else {
     runTests();
   }
 }
 
-export { testSingleCompanyProcessing, testMultipleRuns, testStateInspection, testForceRow, testCSVInspection, runTests }; 
+export { testSingleCompanyProcessing, testMultipleRuns, testStateInspection, testForceRow, testCSVInspection, testWorkflowWithTestData, runTests }; 

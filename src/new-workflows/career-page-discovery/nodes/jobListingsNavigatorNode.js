@@ -18,6 +18,17 @@ const jobListingsNavigatorNode = async (state) => {
   const { careerPageUrl, page } = state;
   
   logger.info('Starting Job Listings Navigator Node', { careerPageUrl });
+  logger.info('Job Listings Navigator - Input State:', { 
+    companyName: state.companyName,
+    page: state.page ? 'Page exists' : 'No page',
+    status: state.status,
+    currentStep: state.currentStep,
+    careerPageUrl: state.careerPageUrl,
+    jobListingsUrl: state.jobListingsUrl,
+    filteredJobUrl: state.filteredJobUrl,
+    metadata: state.metadata,
+    errors: state.errors
+  });
   
   try {
     if (!page) {
@@ -187,7 +198,13 @@ async function findJobListingsWithFallback(page, careerPageUrl) {
     '/jobs/search',
     '/find-jobs',
     '/browse-jobs',
-    '/job-listings'
+    '/job-listings',
+    '#openings',
+    '#jobs',
+    '/intl/en-in/careers',
+    '/intl/en-us/careers',
+    '/careers#openings',
+    '/careers#jobs'
   ];
   
   logger.info('Attempting fallback URL patterns', { 

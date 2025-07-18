@@ -13,10 +13,10 @@ import { enhancedStagehandClient } from '../../shared/utils/enhancedStagehand.js
 import { logger } from '../../shared/utils/logger.js';
 
 // Import nodes
-import { careerPageFinderNode } from './nodes/careerPageFinderNode.js';
-import { jobListingsNavigatorNode } from './nodes/jobListingsNavigatorNode.js';
-import { filterAnalyzerNode } from './nodes/filterAnalyzerNode.js';
-import { metadataConstructorNode } from './nodes/metadataConstructorNode.js';
+import careerPageFinderNode from './nodes/careerPageFinderNode.js';
+import jobListingsNavigatorNode from './nodes/jobListingsNavigatorNode.js';
+import filterAnalyzerNode from './nodes/filterAnalyzerNode.js';
+import metadataConstructorNode from './nodes/metadataConstructorNode.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -129,14 +129,17 @@ async function getCSVTotalRows(csvFilePath) {
 function createCareerDiscoveryWorkflow() {
   const workflow = new StateGraph({
     channels: {
-      companyName: { value: (x) => x.companyName },
-      page: { value: (x) => x.page },
-      careerPageUrl: { value: (x) => x.careerPageUrl },
-      jobListingsUrl: { value: (x) => x.jobListingsUrl },
-      filteredJobUrl: { value: (x) => x.filteredJobUrl },
-      metadata: { value: (x) => x.metadata },
-      status: { value: (x) => x.status },
-      errors: { value: (x) => x.errors }
+      companyName: { type: 'string' },
+      page: { type: 'object' },
+      careerPageUrl: { type: 'string', optional: true },
+      jobListingsUrl: { type: 'string', optional: true },
+      filteredJobUrl: { type: 'string', optional: true },
+      metadata: { type: 'object', optional: true },
+      status: { type: 'string' },
+      errors: { type: 'array', optional: true },
+      currentStep: { type: 'string' },
+      urlParameters: { type: 'object', optional: true },
+      filters: { type: 'object', optional: true }
     }
   });
 
@@ -145,6 +148,9 @@ function createCareerDiscoveryWorkflow() {
   workflow.addNode('job_listings_navigator', jobListingsNavigatorNode);
   workflow.addNode('filter_analyzer', filterAnalyzerNode);
   workflow.addNode('metadata_constructor', metadataConstructorNode);
+
+  // Set entry point
+  workflow.setEntryPoint('career_page_finder');
 
   // Linear flow - no conditional edges needed
   workflow.addEdge('career_page_finder', 'job_listings_navigator');
@@ -174,7 +180,13 @@ async function processCompany(companyName, workflow) {
       page,
       status: 'pending',
       currentStep: 'career_page_finder',
-      errors: []
+      errors: [],
+      careerPageUrl: null,
+      jobListingsUrl: null,
+      filteredJobUrl: null,
+      metadata: null,
+      urlParameters: null,
+      filters: null
     };
     
     // Run the workflow

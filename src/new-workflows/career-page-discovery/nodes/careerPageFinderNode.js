@@ -12,6 +12,17 @@ const careerPageFinderNode = async (state) => {
   const { companyName, page } = state;
   
   logger.info('Starting Career Page Finder Node', { companyName });
+  logger.info('Career Page Finder - Input State:', { 
+    companyName: state.companyName,
+    page: state.page ? 'Page exists' : 'No page',
+    status: state.status,
+    currentStep: state.currentStep,
+    careerPageUrl: state.careerPageUrl,
+    jobListingsUrl: state.jobListingsUrl,
+    filteredJobUrl: state.filteredJobUrl,
+    metadata: state.metadata,
+    errors: state.errors
+  });
   
   try {
     if (!page) {
@@ -118,8 +129,10 @@ async function findCareerPageWithAI(page, companyName) {
  */
 async function findCareerPageWithFallback(page, companyName) {
   const commonPatterns = [
-    `https://careers.${companyName.toLowerCase().replace(/\s+/g, '')}.com`,
+    `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com/intl/en-in/careers`,
+    `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com/intl/en-us/careers`,
     `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com/careers`,
+    `https://careers.${companyName.toLowerCase().replace(/\s+/g, '')}.com`,
     `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com/jobs`,
     `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com/join-us`,
     `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com/work-with-us`,
