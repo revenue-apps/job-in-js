@@ -1,11 +1,11 @@
 company_name,status,reason
-"Google","failed","CSV append failed: ENOENT: no such file or directory, open '/Users/santhoshgugan/Documents/repo/job-in-js/src/data/job_discovery_urls.csv'"
-"Microsoft","failed","No job listings page found for https://careers.microsoft.com, Filter analysis failed: No job listings URL provided from previous node, CSV append failed: ENOENT: no such file or directory, open '/Users/santhoshgugan/Documents/repo/job-in-js/src/data/job_discovery_urls.csv'"
+"Google","success","Career discovery completed successfully"
+"Microsoft",,
 "Meta",,
-"Netflix","failed","Metadata construction failed: Company name is required"
-"Airbnb",,
-"Uber",,
+"Apple",,
+"Amazon",,
+"Netflix",,
 "Spotify",,
-"Slack",,
-"Zoom",,
-"Salesforce",, 
+"Uber",,
+"Airbnb",,
+"Slack",, 

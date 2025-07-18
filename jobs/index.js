@@ -1,5 +1,6 @@
 import { DiscoveryJob } from './discovery.js';
 import { ProcessorJob } from './processor.js';
+import { CareerDiscoveryJob } from './career-discovery.js';
 import { logger } from '../src/shared/utils/logger.js';
 
 /**
@@ -10,6 +11,7 @@ export class JobManager {
   constructor() {
     this.discoveryJob = new DiscoveryJob();
     this.processorJob = new ProcessorJob();
+    this.careerDiscoveryJob = new CareerDiscoveryJob();
     this.isRunning = false;
   }
 
@@ -30,6 +32,9 @@ export class JobManager {
       
       // Start processor job
       this.processorJob.start();
+      
+      // Start career discovery job
+      this.careerDiscoveryJob.start();
       
       this.isRunning = true;
       logger.info('✅ Job Manager started successfully');
@@ -58,6 +63,9 @@ export class JobManager {
       // Stop processor job
       this.processorJob.stop();
       
+      // Stop career discovery job
+      this.careerDiscoveryJob.stop();
+      
       this.isRunning = false;
       logger.info('✅ Job Manager stopped successfully');
       
@@ -78,6 +86,9 @@ export class JobManager {
       },
       processor: {
         isRunning: this.processorJob.isRunning
+      },
+      careerDiscovery: {
+        isRunning: this.careerDiscoveryJob.isRunning
       }
     };
   }
@@ -96,6 +107,14 @@ export class JobManager {
   async triggerProcessor() {
     logger.info('🔧 Manually triggering processor job...');
     return await this.processorJob.runProcessor();
+  }
+
+  /**
+   * Manually trigger career discovery job
+   */
+  async triggerCareerDiscovery() {
+    logger.info('🔍 Manually triggering career discovery job...');
+    return await this.careerDiscoveryJob.runCareerDiscovery();
   }
 }
 
